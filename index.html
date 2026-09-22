@@ -1,0 +1,4008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>短视频评论模拟器</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fe2c55'/%3E%3Ctext x='32' y='45' font-size='32' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'%3E评%3C/text%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    color: #333;
+  }
+  .top-bar {
+    background: #fff;
+    padding: 14px 24px;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  .top-bar .hint { font-size: 12px; color: #999; }
+  .main-wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  .panel-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: #f5f5f5;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+  }
+  .tab-btn.active {
+    background: #fe2c55;
+    color: #fff;
+  }
+  .panel-page {
+    display: none;
+  }
+  .panel-page.active {
+    display: block;
+  }
+
+  .control-panel {
+    flex: 0 0 340px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    position: sticky;
+    top: 80px;
+  }
+  .control-panel h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #1a1a1a;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .form-group input, .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: #fe2c55; }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+  .checkbox-group {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+  }
+  .checkbox-group input[type="checkbox"] { accent-color: #fe2c55; width: 14px; height: 14px; }
+  .btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: inherit;
+  }
+  .btn-primary { background: #fe2c55; color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: #f5f5f5; color: #666; margin-top: 8px; }
+  .btn-secondary:hover { background: #eee; }
+  .settings-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .settings-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #333; }
+
+  /* 头像上传 */
+  .avatar-upload-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .avatar-upload-row input[type="text"] { flex: 1; }
+  .avatar-upload-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+    background: #fafafa;
+    transition: all 0.2s;
+  }
+  .avatar-upload-btn:hover { border-color: #fe2c55; color: #fe2c55; }
+  .avatar-preview-box {
+    display: none;
+    margin-top: 8px;
+    align-items: center;
+    gap: 8px;
+  }
+  .avatar-preview-box.show { display: flex; }
+  .avatar-preview-box img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .avatar-preview-box button {
+    font-size: 11px;
+    color: #999;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+  }
+  .preset-avatars {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .preset-slot {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px dashed #ccc;
+    background: #fafafa;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .preset-slot:hover { border-color: #fe2c55; }
+  .preset-slot img {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+  .preset-slot.has-img { border-style: solid; border-color: #e5e7eb; }
+  .preset-slot.has-img .ps-plus { display: none; }
+  .preset-slot.selected { border-color: #fe2c55; box-shadow: 0 0 0 2px rgba(254, 44, 85, 0.18); }
+  .ps-plus {
+    font-size: 18px;
+    color: #bbb;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* 手机模拟器 */
+  .phone-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+  }
+  .phone-frame {
+    width: 375px;
+    height: 760px;
+    background: #000;
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 30px;
+    overflow: hidden;
+    position: relative;
+    background: #161823;
+  }
+  .video-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 50%, #16213e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-bg .play-icon {
+    width: 0;
+    height: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    border-left: 32px solid rgba(255,255,255,0.7);
+    border-top: 22px solid transparent;
+    border-bottom: 22px solid transparent;
+    margin-left: 8px;
+  }
+
+  .video-info {
+    position: absolute;
+    left: 14px;
+    bottom: 70px;
+    color: #fff;
+    z-index: 2;
+  }
+  .danmu-btn {
+    position: absolute;
+    left: 14px;
+    bottom: 140px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 3;
+  }
+  .danmu-btn.active {
+    background: rgba(255,0,0,0.6);
+  }
+  .danmu-btn .edit-icon {
+    position: absolute;
+    right: 3px;
+    bottom: 8px;
+    font-size: 8px;
+    color: #ffffff !important;
+    background: transparent;
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    filter: brightness(0) invert(1);
+  }
+  .danmu-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    overflow: hidden;
+  }
+  .danmu-item {
+    position: absolute;
+    left: 100%;
+    color: #fff;
+    font-size: 16px;
+    white-space: nowrap;
+    text-shadow: 0 0 2px rgba(0,0,0,0.8);
+    animation: danmuScroll linear forwards;
+  }
+  @keyframes danmuScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100vw); }
+  }
+  .video-info .author { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .video-info .desc-wrapper { position: relative; max-width: 233px; font-size: 13px; line-height: 1.5; }
+  .video-info .desc { opacity: 1; word-break: break-word; display: inline; }
+  .desc-toggle {
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline;
+    font-weight: 500;
+    background: transparent;
+  }
+  .desc-toggle:hover { color: #fff; }
+  /* 播放进度条 */
+  .video-progress-bar {
+    position: absolute;
+    bottom: 56px;
+    left: 0;
+    right: 0;
+    padding: 0 12px 4px;
+    z-index: 11;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .video-progress-bar.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .progress-time {
+    color: #fff;
+    font-size: 11px;
+    text-align: right;
+    margin-bottom: 4px;
+  }
+  .progress-track {
+    position: relative;
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background: #fff;
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+  .progress-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  .top-nav {
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 12px;
+    z-index: 10;
+  }
+  .top-nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: flex-start;
+  }
+  .top-nav-menu span {
+    display: block;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+  }
+  .top-nav-menu span:nth-child(1) {
+    width: 18px;
+  }
+  .top-nav-menu span:nth-child(2) {
+    width: 14px;
+  }
+  .top-nav-menu span:nth-child(3) {
+    width: 10px;
+  }
+  .top-nav-tabs {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .top-nav-tab {
+    color: rgba(255,255,255,0.6);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+  }
+  .top-nav-tab.active {
+    color: #fff !important;
+    font-weight: 900 !important;
+  }
+  .top-nav-search {
+    display: flex;
+    align-items: center;
+  }
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(0,0,0,0.85);
+    display: grid;
+    grid-template-columns: auto auto 1fr auto auto;
+    align-items: center;
+    padding: 0 16px;
+    column-gap: 14px;
+    z-index: 10;
+  }
+  .bottom-nav .nav-item:nth-child(1) { justify-self: end; }
+  .bottom-nav .nav-item:nth-child(2) { justify-self: start; }
+  .bottom-nav .nav-plus { justify-self: center; }
+  .bottom-nav .nav-item:nth-child(4) { justify-self: end; }
+  .bottom-nav .nav-item:nth-child(5) { justify-self: start; }
+  .bottom-nav .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.6);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+    padding: 0 4px;
+  }
+  .bottom-nav .nav-item:nth-child(4) {
+    margin-right: 22px;
+  }
+  .bottom-nav .nav-item.active {
+    color: #fff;
+  }
+  .bottom-nav .nav-item .nav-swap-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+    opacity: 0.9;
+  }
+  .bottom-nav .nav-item .nav-swap-icon svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+  }
+  .bottom-nav .nav-item .nav-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: #fe2c55;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+  .bottom-nav .nav-plus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bottom-nav .plus-btn {
+    width: 40px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .side-actions {
+    position: absolute;
+    right: 10px;
+    bottom: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 2;
+  }
+  .side-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: #fff;
+  }
+
+  /* 音乐唱片 */
+  .disc-container {
+    position: relative;
+    width: 36px;
+    height: 36px;
+  }
+  .disc-outer {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+  }
+  .disc-cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .disc-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+  }
+  .disc-default {
+    color: #888;
+    font-size: 14px;
+    line-height: 44px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+  }
+  .disc-center {
+    display: none;
+  }
+  .side-action .icon {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    background: none;
+  }
+  .side-action .count { font-size: 11px; font-weight: 500; }
+  .side-action.avatar .icon { 
+    background: #fff; 
+    padding: 2px; 
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  .side-action.music-disc .disc-container {
+    width: 36px;
+    height: 36px;
+  }
+  .side-action.music-disc .disc-outer {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* 评论区面板 */
+  .comment-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 62%;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .comment-header {
+    padding: 12px 16px 10px;
+    position: relative;
+    border-bottom: 1px solid #f5f5f5;
+    flex-shrink: 0;
+  }
+  .search-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .search-label {
+    font-size: 13px;
+    color: #333;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .search-keyword {
+    font-size: 13px;
+    color: #3668b3;
+    margin-left: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+    font-weight: 600;
+  }
+  .search-icon {
+    width: 14px;
+    height: 14px;
+    color: #666;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+  .header-right-icons {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    cursor: pointer;
+    background: #f5f5f5;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  .fullscreen-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.5;
+  }
+  .comment-header .close-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #333;
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 600;
+    background: #f5f5f5;
+    border-radius: 50%;
+  }
+  .comment-count {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #161823;
+  }
+  .comment-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0 8px;
+  }
+  .comment-list::-webkit-scrollbar { width: 0; }
+
+  /* 单条评论 - 按参考图设计 */
+  .comment-item {
+    display: flex;
+    padding: 12px 16px;
+    gap: 12px;
+    position: relative;
+  }
+  .comment-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #eee;
+  }
+  .comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .comment-body { flex: 1; min-width: 0; }
+  .comment-username {
+    font-size: 14px;
+    color: #999;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .badge-first {
+    background: #fff0f0;
+    color: #fe2c55;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    line-height: 1.3;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .badge-author {
+    background: #fe2c55;
+    color: #fff;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    line-height: 1.5;
+    display: inline-block;
+    vertical-align: middle;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .badge-fan {
+    background: #f0f0f0;
+    color: #666;
+    font-weight: 500;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    line-height: 1.5;
+    display: inline-block;
+    vertical-align: middle;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+  }
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .tag-author { background: #fe2c55; color: #fff; }
+  .tag-pin { background: #fff0f0; color: #fe2c55; border: 1px solid #ffd6dd; font-size: 9px; padding: 0 4px; line-height: 1; height: 15px; display: inline-flex; align-items: center; box-sizing: border-box; }
+  .comment-text {
+    font-size: 14px;
+    color: #1a1a1a;
+    line-height: 1.5;
+    word-break: break-word;
+    font-weight: 400;
+    margin-bottom: 6px;
+  }
+  .comment-text .mention-link {
+    color: #507daf;
+    cursor: pointer;
+  }
+  .comment-text .mention-link:hover {
+    text-decoration: underline;
+  }
+  .comment-img {
+    margin-bottom: 8px;
+  }
+  .comment-img img {
+    max-width: 120px;
+    max-height: 120px;
+    width: auto;
+    height: auto;
+    border-radius: 4px;
+    object-fit: cover;
+    display: block;
+  }
+  .comment-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+  .comment-meta-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .comment-time { font-size: 13px; color: #999; }
+  .comment-location { font-size: 13px; color: #999; }
+  .meta-dot { color: #ddd; font-size: 12px; }
+  .reply-btn {
+    font-size: 13px;
+    color: #bbb;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .reply-btn:hover { color: #999; }
+
+  /* 点赞和心碎左右并排 */
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .action-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .action-btn .icon-wrap {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .action-btn .icon-wrap svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: #bbb;
+    stroke-width: 1.5;
+    transition: all 0.2s;
+  }
+  .action-btn.liked .icon-wrap svg {
+    fill: #fe2c55;
+    stroke: #fe2c55;
+  }
+  .action-btn.disliked .icon-wrap svg {
+    fill: #999;
+    stroke: #999;
+  }
+  .action-btn .count {
+    font-size: 13px;
+    color: #999;
+  }
+  .action-btn.liked .count { color: #fe2c55; }
+  .action-btn.disliked .count { color: #999; }
+
+  /* 回复输入框 */
+  .reply-input-area {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .reply-input-area input {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    border: 1px solid #e8e8e8;
+    border-radius: 16px;
+    padding: 0 12px;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+  .reply-input-area input:focus { border-color: #fe2c55; }
+  .reply-input-area button {
+    height: 32px;
+    padding: 0 14px;
+    border: none;
+    background: #fe2c55;
+    color: #fff;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .reply-input-area button:hover { opacity: 0.9; }
+
+  /* 楼中楼 - 无灰色背景 */
+  .reply-section {
+    margin-top: 4px;
+  }
+  .reply-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    position: relative;
+  }
+  .reply-item .delete-btn {
+    position: absolute;
+    right: 0;
+    top: 4px;
+    font-size: 10px;
+    color: #ddd;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    font-family: inherit;
+    z-index: 1;
+  }
+  .reply-item:hover .delete-btn { opacity: 1; }
+  .reply-item .delete-btn:hover { color: #fe2c55; }
+  .reply-item .comment-avatar { width: 30px; height: 30px; }
+  .reply-item .comment-text { font-size: 14px; margin-bottom: 4px; }
+  .reply-item .comment-username { font-size: 13px; margin-bottom: 3px; flex-wrap: nowrap; }
+  .reply-item .comment-time { font-size: 12px; }
+  .reply-item .comment-location { font-size: 12px; }
+  .reply-item .reply-btn { font-size: 12px; }
+  .reply-item .comment-footer { flex-wrap: nowrap; gap: 8px; }
+  .reply-item .comment-meta-left { flex: 0 1 auto; gap: 6px; flex-wrap: nowrap; }
+  .reply-item .action-buttons { flex-shrink: 0; gap: 16px; }
+  .reply-item .action-btn .icon-wrap { width: 18px; height: 18px; }
+  .reply-item .action-btn .count { font-size: 12px; }
+  .reply-toggle {
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 4px;
+  }
+  .reply-toggle::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: #ddd;
+    flex-shrink: 0;
+  }
+  .reply-toggle:hover { color: #666; }
+  .reply-toggle .toggle-text { font-weight: 600; }
+  .reply-toggle .arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .reply-toggle .arrow svg { display: block; }
+  .reply-toggle .arrow-down svg { transform: translate(-2px, 1px); }
+  .reply-toggle .arrow-up svg { transform: translate(-2px, 1px); }
+  /* 展开后的底部操作栏 */
+  .reply-footer {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-top: 4px;
+    padding-left: 4px;
+  }
+  .reply-footer .expand-more-btn {
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .reply-footer .expand-more-btn::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: #ddd;
+    flex-shrink: 0;
+  }
+  .reply-footer .expand-more-btn:hover { color: #666; }
+  .reply-footer .collapse-btn {
+    font-size: 13px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    font-weight: 600;
+  }
+  .reply-footer .collapse-btn:hover { color: #666; }
+  .reply-footer .arrow svg { display: block; }
+  .reply-footer .arrow-down svg { transform: translate(-2px, 1px); }
+  .reply-footer .arrow-up svg { transform: translate(-2px, 1px); }
+
+  /* 评论输入框 */
+  .comment-input-bar {
+    padding: 10px 16px;
+    border-top: 1px solid #f5f5f5;
+    flex-shrink: 0;
+    background: #fff;
+  }
+  .reply-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 10px;
+    border: 1px solid #eee;
+  }
+  .input-container {
+    display: flex;
+    flex-direction: column;
+  }
+  /* 输入框区域 */
+  .input-area {
+    position: relative;
+    background: #f5f5f5;
+    border-radius: 16px;
+    padding: 8px 12px;
+    transition: all 0.2s;
+  }
+  /* 字数提示：贴在输入框右下角，不随下方操作栏/表情行展开而错位 */
+  #bottomInputCount {
+    position: absolute;
+    right: 12px;
+    bottom: 6px;
+    z-index: 10;
+    pointer-events: none;
+    background: #f5f5f5;
+    border-radius: 6px;
+    padding: 0 4px;
+    line-height: 1.4;
+  }
+  .input-area textarea {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    outline: none;
+    font-family: inherit;
+    color: #333;
+    resize: none;
+    line-height: 1.4;
+    height: 42px;
+    overflow-y: auto;
+  }
+  .input-area textarea::placeholder { color: #999; }
+  .input-area textarea:focus::placeholder { color: transparent; }
+  .input-area textarea::-webkit-scrollbar { display: none; }
+  /* 未聚焦时inline图标 */
+  .input-icons-inline {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+  .input-icons-inline .input-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .send-btn-inline {
+    background: #fe2c55;
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    display: none;
+  }
+  /* 未聚焦状态：单行高度，inline图标显示 */
+  .comment-input-bar:not(.focused) .input-area {
+    border-radius: 22px;
+    padding: 0 14px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .comment-input-bar:not(.focused) .input-area textarea {
+    font-size: 13px;
+    height: 20px;
+    min-height: 20px;
+  }
+  .comment-input-bar:not(.focused) .input-icons-inline {
+    display: flex;
+  }
+  /* 操作栏 */
+  .input-actions {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .comment-input-bar.focused .input-actions {
+    display: flex;
+  }
+  .action-icons {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .input-icon {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+  .input-icon svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
+  .send-btn {
+    background: #fe2c55;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { opacity: 0.9; }
+  /* 常用表情 */
+  .quick-emojis {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+  .comment-input-bar.focused .quick-emojis {
+    display: flex;
+  }
+  .quick-emojis::-webkit-scrollbar { display: none; }
+  .quick-emoji {
+    font-size: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .quick-emoji:hover { background: #f5f5f5; }
+  /* 图片预览 */
+  .bottom-img-preview {
+    position: relative;
+    margin-top: 8px;
+    display: inline-block;
+  }
+  .bottom-img-preview img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .bottom-img-preview .remove-img {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  /* @人面板 */
+  .mention-panel {
+    padding: 12px 0 8px;
+  }
+  .mention-users {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 0 16px 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .mention-users::-webkit-scrollbar { display: none; }
+  .mention-user-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    width: 50px;
+  }
+  .mention-user-item .mention-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .mention-user-item .mention-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .mention-user-item .mention-name {
+    font-size: 11px;
+    color: #666;
+    max-width: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .mention-search-wrap {
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mention-search {
+    flex: 1;
+    height: 38px;
+    border: 1px solid #e8e8e8;
+    border-radius: 19px;
+    padding: 0 14px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    background: #f8f8f8;
+  }
+  .mention-search:focus { border-color: #fe2c55; background: #fff; }
+  .mention-send {
+    background: #fff;
+    border: 1px solid #fe2c55;
+    color: #fe2c55;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px 14px;
+    border-radius: 14px;
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+  .mention-send:hover { background: #fff5f7; }
+  .mention-cancel {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 6px 4px;
+    flex-shrink: 0;
+  }
+  .mention-cancel:hover { color: #333; }
+  /* 表情面板 */
+  .emoji-panel {
+    margin-top: 8px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 8px;
+  }
+  .emoji-categories {
+    display: flex;
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f5f5f5;
+    margin-bottom: 8px;
+  }
+  .emoji-cat {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  .emoji-cat:hover { background: #f5f5f5; }
+  .emoji-cat.active { background: #f0f0f0; }
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .emoji-grid::-webkit-scrollbar { width: 0; }
+  .emoji-item {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .emoji-item:hover { background: #f0f0f0; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #ccc;
+    font-size: 13px;
+  }
+  .comment-item .delete-btn {
+    position: absolute;
+    right: 16px;
+    top: 8px;
+    font-size: 10px;
+    color: #ddd;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .comment-item:hover .delete-btn { opacity: 1; }
+  .comment-item .delete-btn:hover { color: #fe2c55; }
+
+  .preset-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .preset-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #333; }
+  .preset-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preset-btns button {
+    padding: 5px 10px;
+    border: 1px solid #e0e0e0;
+    background: #fafafa;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .preset-btns button:hover { border-color: #fe2c55; color: #fe2c55; background: #fff0f0; }
+
+  /* ===== 表情选择器（评论设置 / 回复输入） ===== */
+  .emoji-tool-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+  }
+  .emoji-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .emoji-toggle-btn:hover { border-color: #fe2c55; color: #fe2c55; }
+  .emoji-toggle-btn.active { border-color: #fe2c55; color: #fe2c55; background: #fff0f0; }
+  .emoji-picker {
+    margin-top: 6px;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    background: #fafafa;
+    padding: 8px;
+  }
+  .emoji-picker .ep-cats {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+  .emoji-picker .ep-cat {
+    width: 30px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .emoji-picker .ep-cat:hover { background: #f0f0f0; }
+  .emoji-picker .ep-cat.active { background: #e8e8e8; }
+  .emoji-picker .ep-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    max-height: 132px;
+    overflow-y: auto;
+  }
+  .emoji-picker .ep-grid::-webkit-scrollbar { width: 0; }
+  .emoji-picker .ep-item {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .emoji-picker .ep-item:hover { background: #f0f0f0; }
+  .reply-emoji-btn {
+    height: 32px;
+    min-width: 32px;
+    padding: 0 8px;
+    border: 1px solid #e8e8e8;
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .reply-emoji-btn:hover { border-color: #fe2c55; }
+  .reply-emoji-btn.active { border-color: #fe2c55; background: #fff0f0; }
+  .reply-emoji-picker { flex: 1 1 100%; }
+
+  /* ===== 移动端适配（手机直接打开可用） ===== */
+  .mobile-view-switch { display: none; }
+
+  @media (max-width: 700px) {
+    .top-bar {
+      height: 44px;
+      padding: 0 12px;
+    }
+    .top-bar h1 { font-size: 16px; }
+    .top-bar .hint { display: none; }
+
+    /* 预览 / 设置 切换按钮 */
+    .mobile-view-switch {
+      display: flex;
+      background: #f0f2f5;
+      border-radius: 18px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .m-view-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 16px;
+      border-radius: 15px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+    .m-view-btn.active {
+      background: #fff;
+      color: #fe2c55;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* 纵向布局：预览与设置互斥显示 */
+    .main-wrap {
+      flex-direction: column !important;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+    }
+    body.view-settings .phone-area { display: none !important; }
+    body.view-preview .control-panel { display: none !important; }
+
+    .phone-area {
+      order: -1;
+      width: 100%;
+    }
+    .phone-frame {
+      width: min(100%, 375px);
+      height: 760px;
+    }
+    @supports (aspect-ratio: 1 / 1) {
+      .phone-frame { height: auto; aspect-ratio: 375 / 760; }
+    }
+
+    .control-panel {
+      flex: none !important;
+      width: 100%;
+      position: static;
+      top: auto;
+      padding: 16px;
+    }
+    /* 设置页签吸顶，方便切换评论/回复/视频设置 */
+    .panel-tabs {
+      position: sticky;
+      top: 44px;
+      z-index: 5;
+      background: #fff;
+      padding-top: 6px;
+    }
+    .tab-btn { padding: 10px 12px; font-size: 15px; }
+
+    /* 表单控件加大字号，避免 iOS 聚焦输入框自动放大页面 */
+    .form-group input, .form-group textarea, .form-group select,
+    .input-area textarea, .mention-search, .reply-input-area input {
+      font-size: 16px !important;
+    }
+    .comment-input-bar:not(.focused) .input-area textarea {
+      font-size: 16px !important;
+      height: 24px;
+      min-height: 24px;
+    }
+    .form-group label { font-size: 13px; }
+    .form-row { flex-wrap: wrap; }
+
+    .btn { padding: 12px; font-size: 15px; }
+    .avatar-upload-btn { padding: 10px 12px; font-size: 13px; }
+
+    /* 常用可点元素禁止双击缩放 */
+    .btn, .tab-btn, .avatar-upload-btn, .preset-btns button, .reply-btn,
+    .desc-toggle, .input-icon, .top-nav-tab, .nav-item, .side-action,
+    .reply-toggle, .collapse-btn, .expand-more-btn, .fullscreen-btn,
+    .close-btn, .quick-emoji, .emoji-item, .emoji-cat, .mention-user-item,
+    .m-view-btn {
+      touch-action: manipulation;
+    }
+
+    /* 底部输入栏移动端收紧：给占位文字腾出空间，避免被裁 */
+    .comment-input-bar { padding-left: 12px; padding-right: 12px; }
+    .comment-input-bar:not(.focused) .input-area { padding-left: 12px; padding-right: 12px; }
+    .comment-input-bar:not(.focused) .input-icons-inline { gap: 12px; }
+    .comment-input-bar:not(.focused) .input-icons-inline .input-icon svg { width: 18px; height: 18px; }
+  }
+
+  @media (max-width: 400px) {
+    .main-wrap { padding: 10px; }
+    .phone-frame { border-radius: 32px; }
+    .comment-input-bar:not(.focused) .input-icons-inline { gap: 10px; }
+    .comment-input-bar:not(.focused) .input-icons-inline .input-icon svg { width: 16px; height: 16px; }
+  }
+</style>
+</head>
+<body class="view-preview">
+
+<div class="top-bar">
+  <h1>短视频评论模拟器</h1>
+  <div class="mobile-view-switch" id="mobileViewSwitch">
+    <button type="button" class="m-view-btn active" id="viewPreviewBtn" onclick="switchMobileView('preview')">预览</button>
+    <button type="button" class="m-view-btn" id="viewSettingsBtn" onclick="switchMobileView('settings')">设置</button>
+  </div>
+  <span class="hint">自定义评论 · 实时预览 · 一键导出</span>
+</div>
+
+<div class="main-wrap">
+  <div class="control-panel">
+    <div class="panel-tabs">
+      <button class="tab-btn active" onclick="switchPanelTab(1)">评论设置</button>
+      <button class="tab-btn" onclick="switchPanelTab(2)">回复设置</button>
+      <button class="tab-btn" onclick="switchPanelTab(3)">视频设置</button>
+    </div>
+    <div class="panel-page active" id="panelPage1">
+    <h2>添加评论</h2>
+    <div class="form-group">
+      <label>用户名</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="inputUsername" placeholder="例如：购物小达人" style="flex:1;">
+        <button type="button" onclick="randomUsername()" style="padding:0 12px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;cursor:pointer;font-size:14px;">随机</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>头像（上传图片或留空自动生成）</label>
+      <div class="avatar-upload-row">
+        <input type="text" id="inputAvatar" placeholder="留空自动生成彩色头像">
+        <label class="avatar-upload-btn">上传图片
+          <input type="file" id="avatarFile" accept="image/*" multiple style="display:none;">
+        </label>
+      </div>
+      <div class="avatar-preview-box" id="avatarPreviewBox">
+        <img id="avatarPreviewImg" src="">
+        <button onclick="clearAvatar()">清除图片</button>
+      </div>
+      <div class="preset-avatars" id="presetAvatars">
+        <div class="preset-slot" onclick="pickPreset(0)"><img alt=""><span class="ps-plus">+</span></div>
+        <div class="preset-slot" onclick="pickPreset(1)"><img alt=""><span class="ps-plus">+</span></div>
+        <div class="preset-slot" onclick="pickPreset(2)"><img alt=""><span class="ps-plus">+</span></div>
+        <div class="preset-slot" onclick="pickPreset(3)"><img alt=""><span class="ps-plus">+</span></div>
+        <div class="preset-slot" onclick="pickPreset(4)"><img alt=""><span class="ps-plus">+</span></div>
+        <input type="file" id="presetFile" accept="image/*" multiple style="display:none;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>评论内容</label>
+      <div style="position:relative;">
+        <textarea id="inputContent" placeholder="说点什么..." maxlength="100" oninput="updateCommentCount()"></textarea>
+        <span id="commentCount" style="position:absolute;right:8px;bottom:8px;font-size:12px;color:#999;">0/100</span>
+      </div>
+      <div class="emoji-tool-row">
+        <button type="button" class="emoji-toggle-btn" id="contentEmojiBtn" onclick="toggleContentEmoji()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          表情
+        </button>
+      </div>
+      <div class="emoji-picker" id="contentEmojiPicker" style="display:none;"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>时间</label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="inputTimeNum" placeholder="如：3" min="1" max="999" style="width:60px;">
+          <select id="inputTimeUnit" style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="分钟前">分钟前</option>
+            <option value="小时前" selected>小时前</option>
+            <option value="天前">天前</option>
+            <option value="年前">年前</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>地点</label>
+      <div style="display:flex;gap:8px;">
+        <select id="inputCountry" onchange="updateProvinces('input')" style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="不显示">不显示</option><option value="中国">中国</option><option value="美国">美国</option><option value="日本">日本</option><option value="韩国">韩国</option><option value="英国">英国</option><option value="法国">法国</option><option value="德国">德国</option><option value="澳大利亚">澳大利亚</option><option value="加拿大">加拿大</option><option value="新加坡">新加坡</option><option value="泰国">泰国</option><option value="马来西亚">马来西亚</option>
+        </select>
+        <select id="inputProvince" disabled style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="">请选择</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>点赞数</label>
+        <input type="number" id="inputLikes" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label>心碎数</label>
+        <input type="number" id="inputDislikes" value="0" min="0">
+      </div>
+    </div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="inputAuthor"> 作者</label>
+      <label><input type="checkbox" id="inputFirst"> 首评</label>
+      <label><input type="checkbox" id="inputPin"> 置顶</label>
+    </div>
+    <button class="btn btn-primary" onclick="addComment()">添加到评论区</button>
+    <button class="btn btn-secondary" onclick="clearAll()">清空所有评论</button>
+
+    <div class="preset-section">
+      <h3>快速预设（带货场景）</h3>
+      <div class="preset-btns">
+        <button onclick="addPreset('good')">好评晒单</button>
+        <button onclick="addPreset('question')">提问咨询</button>
+        <button onclick="addPreset('want')">求链接</button>
+        <button onclick="addPreset('compare')">对比评价</button>
+        <button onclick="addPreset('repeat')">回购老客</button>
+        <button onclick="addPreset('author_reply')">作者回复</button>
+      </div>
+    </div>
+    </div>
+    <div class="panel-page" id="panelPage2">
+    <div class="settings-section">
+      <h3>回复设置</h3>
+      <div class="form-group">
+        <label>大家都在搜</label>
+        <input type="text" id="inputSearchKeyword" value="谁家的牌子好用" placeholder="如：谁家的牌子好用" oninput="updateSearchKeyword()">
+      </div>
+      <div class="form-group">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+          <div id="replyAvatarPreview" style="width:48px;height:48px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#fe2c55,#ff6b8a);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:bold;">我</div>
+          <div style="flex:1;">
+            <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">回复时的头像</label>
+            <div class="avatar-upload-row">
+              <input type="text" id="replyAvatarInput" placeholder="留空默认" readonly>
+              <label class="avatar-upload-btn">上传
+                <input type="file" id="replyAvatarFile" accept="image/*" style="display:none;" onchange="handleReplyAvatarUpload(event)">
+              </label>
+            </div>
+          </div>
+        </div>
+        <input type="text" id="replyNickname" value="我" placeholder="回复时显示的昵称" style="margin-bottom:10px;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">回复默认点赞数</label>
+        <input type="number" id="replyLikes" value="0" min="0" style="margin-bottom:10px;width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">回复默认心碎数</label>
+        <input type="number" id="replyDislikes" value="0" min="0" style="margin-bottom:10px;width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">回复默认时间</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="number" id="replyTimeNum" placeholder="如：3" min="1" max="999" style="width:60px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <select id="replyTimeUnit" style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="分钟前">分钟前</option>
+            <option value="小时前" selected>小时前</option>
+            <option value="天前">天前</option>
+            <option value="年前">年前</option>
+          </select>
+        </div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">回复默认地点</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <select id="replyCountry" onchange="updateProvinces('reply')" style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="不显示">不显示</option><option value="中国">中国</option><option value="美国">美国</option><option value="日本">日本</option><option value="韩国">韩国</option><option value="英国">英国</option><option value="法国">法国</option><option value="德国">德国</option><option value="澳大利亚">澳大利亚</option><option value="加拿大">加拿大</option><option value="新加坡">新加坡</option><option value="泰国">泰国</option><option value="马来西亚">马来西亚</option>
+        </select>
+        <select id="replyProvince" disabled style="width:110px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="">请选择</option>
+        </select>
+      </div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">身份标识（可选）</label>
+        <select id="replyBadge" style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="">无身份标识</option>
+          <option value="author">作者</option>
+        </select>
+      </div>
+    </div>
+    </div>
+    <div class="panel-page" id="panelPage3">
+    <div class="settings-section">
+      <h3>视频设置</h3>
+      <div class="form-group">
+        <label>视频背景（上传图片或视频，留空默认黑屏）</label>
+        <div class="avatar-upload-row">
+          <input type="text" id="inputVideoBg" placeholder="留空默认黑屏" readonly>
+          <label class="avatar-upload-btn">上传图片
+            <input type="file" id="videoBgFile" accept="image/*" style="display:none;" onchange="handleVideoBgUpload(event, 'image')">
+          </label>
+          <label class="avatar-upload-btn">上传视频
+            <input type="file" id="videoBgVideoFile" accept="video/*" style="display:none;" onchange="handleVideoBgUpload(event, 'video')">
+          </label>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:6px;padding:4px 12px;font-size:12px;" onclick="clearVideoBg()">清除背景</button>
+      </div>
+      <div class="form-group">
+        <label>视频作者头像（上传图片或留空默认）</label>
+        <div class="avatar-upload-row">
+          <input type="text" id="inputVideoAvatar" placeholder="留空默认彩色头像" readonly>
+          <label class="avatar-upload-btn">上传图片
+            <input type="file" id="videoAvatarFile" accept="image/*" style="display:none;" onchange="handleVideoAvatarUpload(event)">
+          </label>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:6px;padding:4px 12px;font-size:12px;" onclick="clearVideoAvatar()">清除头像</button>
+      </div>
+      <div class="form-group">
+        <label>视频作者名字</label>
+        <input type="text" id="inputVideoAuthor" value="@好物分享官" maxlength="10" oninput="updateVideoAuthor()">
+      </div>
+      <div class="form-group">
+        <label>视频介绍文案</label>
+        <textarea id="inputVideoDesc" rows="2" maxlength="80" oninput="updateVideoDesc()">这个真的绝了！用了一周皮肤明显变好，姐妹们冲！#好物分享 #护肤</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>点赞数</label>
+          <input type="text" id="inputLikeCount" value="0" oninput="updateLikeCount()">
+        </div>
+        <div class="form-group">
+          <label>收藏数</label>
+          <input type="text" id="inputCollectCount" value="0" oninput="updateCollectCount()">
+        </div>
+        <div class="form-group">
+          <label>分享数</label>
+          <input type="text" id="inputShareCount" value="0" oninput="updateShareCount()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>消息未读数</label>
+        <input type="text" id="inputMsgCount" value="0" oninput="updateMsgCount()">
+      </div>
+
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="settingVideo" checked onchange="toggleVideoBg()"> 显示视频背景</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="settingSide" checked onchange="toggleSideActions()"> 显示右侧操作栏</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="settingMemory" checked onchange="toggleMemory()"> 启用自动记忆</label>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="phone-area">
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="video-bg" id="videoBg" onclick="handleVideoClick()" style="cursor:pointer;">
+          <img id="videoBgImg" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">
+          <video id="videoBgVideo" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;" loop playsinline></video>
+          <div class="play-icon" id="videoPlayIcon"></div>
+        </div>
+        <!-- 顶部导航栏 -->
+        <div class="top-nav">
+          <div class="top-nav-menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="top-nav-tabs">
+            <div class="top-nav-tab">直播</div>
+            <div class="top-nav-tab">团购</div>
+            <div class="top-nav-tab">同城</div>
+            <div class="top-nav-tab">关注</div>
+            <div class="top-nav-tab">商城</div>
+            <div class="top-nav-tab active" style="position:relative;">推荐
+              <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:22px;height:2px;background:#fff;border-radius:1px;"></div>
+            </div>
+          </div>
+          <div class="top-nav-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+        </div>
+        <div class="danmu-layer" id="danmuLayer"></div>
+        <div class="danmu-btn" id="danmuBtn" onclick="toggleDanmu()">
+          弹
+          <span class="edit-icon">✏️</span>
+        </div>
+        <div class="video-info" id="videoInfo">
+          <div class="author" id="videoAuthor">@好物分享官</div>
+          <div class="desc-wrapper">
+            <span class="desc" id="videoDesc">这个真的绝了！用了一周皮肤明显变好，姐妹们冲！#好物分享 #护肤</span><span class="desc-toggle" id="descToggle" style="display:none;" onclick="toggleDesc()">展开</span>
+          </div>
+        </div>
+        <!-- 播放进度条 -->
+        <div class="video-progress-bar" id="videoProgressBar">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-thumb" id="progressThumb"></div>
+          </div>
+        </div>
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+          <div class="nav-item active">
+            <span class="nav-text">首页</span>
+            <span class="nav-swap-icon" style="font-size:12px;color:#fff;line-height:1;margin-top:2px;">⇋</span>
+          </div>
+          <div class="nav-item">
+            <span class="nav-text">朋友</span>
+          </div>
+          <div class="nav-item nav-plus">
+            <div class="plus-btn">+</div>
+          </div>
+          <div class="nav-item">
+            <span class="nav-text">消息</span>
+            <span class="nav-badge" id="msgBadge">0</span>
+          </div>
+          <div class="nav-item">
+            <span class="nav-text">我</span>
+          </div>
+        </div>
+        <div class="side-actions" id="sideActions">
+          <div class="side-action avatar">
+            <div class="icon" id="videoAvatar" style="overflow:hidden;border-radius:50%;"><div id="videoAvatarDefault" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#fe2c55,#ff6b8a);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:bold;">好</div><img id="videoAvatarImg" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+          </div>
+          <div class="side-action" style="cursor:pointer;" onclick="toggleVideoLike()">
+            <div class="icon side-icon" id="videoLikeIcon">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <div class="count" id="likeCount">0</div>
+          </div>
+          <div class="side-action" style="cursor:pointer;" onclick="togglePanel()">
+            <div class="icon side-icon">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.87 1.44 5.42 3.7 7.12L5 22l4.5-2.4c.8.2 1.64.3 2.5.3 5.52 0 10-3.94 10-8.8S17.52 2 12 2zm-3 7.5c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm3 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm3 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/></svg>
+            </div>
+            <div class="count" id="totalCount">0</div>
+          </div>
+          <div class="side-action" style="cursor:pointer;" onclick="toggleVideoCollect()">
+            <div class="icon side-icon" id="videoCollectIcon">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            </div>
+            <div class="count" id="collectCount">0</div>
+          </div>
+          <div class="side-action" style="cursor:pointer;" onclick="shareLink()">
+            <div class="icon side-icon">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M15 5.63L20.66 12 15 18.37V14h-1c-3.96 0-7.14 1-9.75 3.09 1.84-4.07 5.11-6.4 9.89-7.1l.86-.13V5.63z"/></svg>
+            </div>
+            <div class="count" id="shareCount">0</div>
+          </div>
+          <div class="side-action music-disc" style="cursor:pointer;" onclick="toggleMusic()">
+            <div class="disc-container">
+              <div class="disc-outer">
+                <div class="disc-cover">
+                  <div id="musicDiscDefault" class="disc-default">♪</div>
+                  <img id="musicDiscImg" src="" style="display:none; width:100%; height:100%; object-fit:cover; object-position:center; border-radius:50%;">
+                </div>
+              </div>
+              <div class="disc-center"></div>
+              <div id="muteOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;color:rgba(255,255,255,0.7);font-size:14px;background:rgba(0,0,0,0.4);border-radius:50%;font-weight:bold;z-index:10;">♪</div>
+            </div>
+          </div>
+          <input type="file" id="musicDiscFile" accept="image/*" style="display:none;" onchange="handleMusicDiscUpload(event)">
+        </div>
+
+        <div class="comment-panel">
+          <div class="comment-header">
+            <div class="search-row">
+              <span class="search-label">大家都在搜：</span>
+              <span class="search-keyword" id="searchKeyword">谁家的牌子好用</span>
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span class="header-right-icons">
+                <span class="fullscreen-btn" onclick="event.stopPropagation(); toggleFullscreen()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5h7v7"/>
+                    <path d="M12 19H5v-7"/>
+                  </svg>
+                </span>
+                <span class="close-btn" onclick="event.stopPropagation(); togglePanel()">×</span>
+              </span>
+            </div>
+            <div class="comment-count" id="commentTitle">0条评论</div>
+          </div>
+          <div class="comment-list" id="commentList" onclick="closePanelsOnClick()"></div>
+          <div class="comment-input-bar" id="commentInputBar" style="position:relative;">
+            <div class="input-container">
+            <!-- 输入框区域 -->
+            <div class="input-area">
+              <textarea id="bottomInput" placeholder="发条评论，和大家一起讨论" rows="2" oninput="toggleSendBtn()" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();submitBottomComment();return false;}"></textarea>
+              <span id="bottomInputCount" style="font-size:12px;color:#999;display:none;">0/100</span>
+              <!-- 未聚焦时显示的图标 -->
+              <div class="input-icons-inline">
+                <span class="input-icon" onclick="document.getElementById('bottomImgInput').click()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </span>
+                <span class="input-icon" onclick="toggleMentionPanel()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
+                  </svg>
+                </span>
+                <span class="input-icon" onclick="toggleEmojiPanel()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                </span>
+                <button class="send-btn-inline" id="sendBtnInline" onclick="submitBottomComment()">发送</button>
+              </div>
+            </div>
+            <!-- 操作栏（图标+发送） -->
+            <div class="input-actions">
+              <div class="action-icons">
+                <span class="input-icon" onclick="document.getElementById('bottomImgInput').click()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </span>
+                <span class="input-icon" onclick="toggleMentionPanel()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>
+                  </svg>
+                </span>
+                <span class="input-icon" onclick="toggleEmojiPanel()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                  </svg>
+                </span>
+              </div>
+              <button class="send-btn" id="bottomSendBtn" onclick="submitBottomComment()">发送</button>
+            </div>
+            <!-- 常用表情 -->
+            <div class="quick-emojis" id="quickEmojis">
+              <span class="quick-emoji" onclick="insertEmoji('😊')">😊</span>
+              <span class="quick-emoji" onclick="insertEmoji('😭')">😭</span>
+              <span class="quick-emoji" onclick="insertEmoji('😁')">😁</span>
+              <span class="quick-emoji" onclick="insertEmoji('👍')">👍</span>
+              <span class="quick-emoji" onclick="insertEmoji('😂')">😂</span>
+              <span class="quick-emoji" onclick="insertEmoji('👏')">👏</span>
+              <span class="quick-emoji" onclick="insertEmoji('🌹')">🌹</span>
+              <span class="quick-emoji" onclick="insertEmoji('🎉')">🎉</span>
+            </div>
+            </div>
+            <input type="file" id="bottomImgInput" accept="image/*" style="display:none;" onchange="handleBottomImgUpload(event)">
+            <!-- 图片预览 -->
+            <div class="bottom-img-preview" id="bottomImgPreview" style="display:none;">
+              <img id="bottomImgPreviewImg" src="">
+              <span class="remove-img" onclick="removeBottomImg()">×</span>
+            </div>
+            <!-- @人面板 -->
+            <div class="mention-panel" id="mentionPanel" style="display:none;">
+              <div class="mention-users" id="mentionUsers"></div>
+              <div class="mention-search-wrap">
+                <input type="text" class="mention-search" id="mentionSearch" placeholder="搜索要@的人" oninput="filterMentionUsers()" onkeydown="if(event.key==='Enter'){sendMention();return false;}">
+                <button class="mention-send" onclick="sendMention()">发送</button>
+                <button class="mention-cancel" onclick="closeMentionPanel()">取消</button>
+              </div>
+            </div>
+            <!-- 表情面板 -->
+            <div class="emoji-panel" id="emojiPanel" style="display:none;">
+              <div class="emoji-categories">
+                <span class="emoji-cat active" onclick="switchEmojiCat(this, '常用')">😊</span>
+                <span class="emoji-cat" onclick="switchEmojiCat(this, '手势')">👍</span>
+                <span class="emoji-cat" onclick="switchEmojiCat(this, '爱心')">❤️</span>
+                <span class="emoji-cat" onclick="switchEmojiCat(this, '动物')">🐱</span>
+                <span class="emoji-cat" onclick="switchEmojiCat(this, '食物')">🍔</span>
+                <span class="emoji-cat" onclick="switchEmojiCat(this, '物品')">🎉</span>
+              </div>
+              <div class="emoji-grid" id="emojiGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const avatarColors = [
+    ['#fe2c55', '#ff6b8a'], ['#ff9500', '#ffb347'], ['#00b894', '#55efc4'],
+    ['#0984e3', '#74b9ff'], ['#6c5ce7', '#a29bfe'], ['#e84393', '#fd79a8'],
+    ['#00cec9', '#81ecec'], ['#fdcb6e', '#ffeaa7'], ['#e17055', '#fab1a0'],
+    ['#2d3436', '#636e72']
+  ];
+
+  let _currentAvatarImg = '';
+
+  // 心形SVG（空心）
+  const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+  // 破碎心形SVG（空心+裂缝）
+  const BROKEN_HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path d="M12 4.5l-2.5 4.5h3l-2 4 3.5-2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 完全破裂心形SVG（灰色实心+闪电裂缝，点击后显示）
+  const BROKEN_HEART_FULL_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#999"/><path d="M12 5.5 L10 9 L13 12 L10.5 15.5 L13 18.5 L12 21" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 向下箭头（^形状细线条）
+  const ARROW_DOWN_SVG = '<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 1 L5 7 L9 1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 向上箭头（^形状细线条）
+  const ARROW_UP_SVG = '<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 7 L5 1 L9 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  const presets = {
+    good: [
+      { username: '已买等收货', content: '刚下单！期待效果，到了来追评～', likes: 234, dislikes: 2, time: '2小时前', location: '广东' },
+      { username: '用了三天', content: '真的有用！我是敏感肌也没过敏，已经推荐给闺蜜了', likes: 1892, dislikes: 5, time: '5小时前', location: '浙江' },
+      { username: '回购第三次', content: '老粉了，每次活动都囤，性价比真的高', likes: 567, dislikes: 1, time: '1天前', location: '四川' }
+    ],
+    question: [
+      { username: '纠结星人', content: '请问油皮适合吗？会不会闷痘？', likes: 45, dislikes: 0, time: '30分钟前', location: '北京' },
+      { username: '新手妈妈', content: '孕妇可以用吗？看成分好像挺安全的', likes: 89, dislikes: 0, time: '1小时前', location: '上海' }
+    ],
+    want: [
+      { username: '被种草了', content: '求链接！找了好久这种的', likes: 156, dislikes: 3, time: '3小时前', location: '湖北' },
+      { username: '等等党', content: '什么时候还有活动？上次没抢到后悔死了', likes: 78, dislikes: 0, time: '6小时前', location: '湖南' }
+    ],
+    compare: [
+      { username: '用过很多款', content: '对比了某大牌，这个性价比高太多了，效果差不多', likes: 3421, dislikes: 12, time: '8小时前', location: '江苏' },
+      { username: '成分党本党', content: '看了成分表很良心，这个价位能有这个配置真的少见', likes: 876, dislikes: 2, time: '12小时前', location: '山东' }
+    ],
+    repeat: [
+      { username: '老客户了', content: '第N次回购，从第一代用到现在，越来越好了', likes: 1234, dislikes: 3, time: '1天前', location: '福建' },
+      { username: '跟着买的', content: '看博主推荐买的，果然没踩雷，已经是第二次买了', likes: 432, dislikes: 1, time: '2天前', location: '河南' }
+    ],
+    author_reply: [
+      { username: '好物分享官', content: '谢谢姐妹支持！有任何问题随时找客服哦～', likes: 567, dislikes: 0, time: '4小时前', location: '广东', author: true }
+    ]
+  };
+
+  let comments = [];
+
+  let nextId = 100;
+
+  function makeAvatar(color, text, imgSrc) {
+    if (imgSrc) {
+      return '<div class="comment-avatar"><img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;"></div>';
+    }
+    const initial = (text || '?').charAt(0).toUpperCase();
+    const c = color || avatarColors[Math.floor(Math.random() * avatarColors.length)];
+    return '<div class="comment-avatar"><div style="width:100%;height:100%;background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600;">' + initial + '</div></div>';
+  }
+
+  function formatCount(n) {
+    if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+    return n.toString();
+  }
+
+  // 把文本中的@用户名替换为蓝色链接
+  function renderMentionLinks(text) {
+    if (!text) return '';
+    return text.replace(/@([^\s@]+)/g, '<span class="mention-link">@$1</span>');
+  }
+
+  // 渲染操作按钮（点赞+心碎并排）
+  function renderActionButtons(likes, dislikes, commentId) {
+    return '<div class="action-buttons">' +
+      '<div class="action-btn" onclick="toggleLike(this, ' + likes + ', ' + commentId + ')">' +
+        '<div class="icon-wrap">' + HEART_SVG + '</div>' +
+        '<span class="count">' + formatBigNum(likes) + '</span>' +
+      '</div>' +
+      '<div class="action-btn" onclick="toggleDislike(this, ' + dislikes + ', ' + commentId + ')">' +
+        '<div class="icon-wrap">' + BROKEN_HEART_SVG + '</div>' +
+        '<span class="count">' + formatBigNum(dislikes) + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderComment(c) {
+    const colorIdx = Math.abs(hashCode(c.username)) % avatarColors.length;
+    const color = avatarColors[colorIdx];
+    const tags = [];
+    if (c.pin) tags.push('<span class="tag tag-pin">置顶</span>');
+    if (c.author) tags.push('<span class="badge badge-author">作者</span>');
+
+    // 地点显示
+    const locationHtml = c.location ? '<span class="meta-dot">·</span><span class="comment-location">' + c.location + '</span>' : '';
+
+    let repliesHtml = '';
+    if (c.replies && c.replies.length > 0) {
+      const totalReplies = c.replies.length;
+      const replyItems = c.replies.map(function(r) {
+        const rc = avatarColors[Math.abs(hashCode(r.username)) % avatarColors.length];
+        const rLocationHtml = r.location ? '<span class="meta-dot">·</span><span class="comment-location">' + r.location + '</span>' : '';
+        const replyToHtml = r.replyTo ? '<span style="color:#bbb;margin:0 2px;">▶</span><span style="color:#999;">' + r.replyTo + '</span>' : '';
+        return '<div class="reply-item">' +
+          '<button class="delete-btn" onclick="deleteReply(' + c.id + ', ' + r.id + ')">删除</button>' +
+          makeAvatar(rc, r.username, r.avatarImg) +
+          '<div class="comment-body">' +
+            '<div class="comment-username">' + r.username +
+              (r.author ? '<span class="badge badge-author">作者</span>' : '') +
+              (r.isFan ? '<span class="badge badge-fan">粉丝</span>' : '') +
+              replyToHtml +
+            '</div>' +
+            '<div class="comment-text">' + renderMentionLinks(r.content) + '</div>' +
+            '<div class="comment-footer">' +
+              '<div class="comment-meta-left">' +
+                '<span class="comment-time"' + (r.timeTs ? ' data-ts="' + r.timeTs + '"' : '') + '>' + (r.timeTs ? fmtDynamicTime(r.timeTs) : (r.time || '刚刚')) + '</span>' +
+                rLocationHtml +
+                '<button class="reply-btn" onclick="showReplyInput(' + c.id + ', this, \'' + r.username.replace(/'/g, "\\'") + '\')">回复</button>' +
+              '</div>' +
+              renderActionButtons(r.likes || 0, r.dislikes || 0, r.id) +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      // 底部操作栏：超过3条时有"展开更多"，否则只有"收起"
+      const hasMore = totalReplies > 3;
+      const footerHtml = '<div class="reply-footer">' +
+        (hasMore ? '<span class="expand-more-btn" onclick="expandMoreReplies(this, ' + c.id + ')"><span>展开更多</span><span class="arrow arrow-down">' + ARROW_DOWN_SVG + '</span></span>' : '') +
+        '<span class="collapse-btn" onclick="collapseReplies(this, ' + c.id + ')"><span>收起</span><span class="arrow arrow-up">' + ARROW_UP_SVG + '</span></span>' +
+      '</div>';
+
+      repliesHtml = '<div class="reply-section" data-comment-id="' + c.id + '">' +
+        // 未展开时的按钮
+        '<div class="reply-toggle" onclick="toggleReplies(this, ' + c.id + ')">' +
+          '<span class="toggle-text">展开' + totalReplies + '条回复</span>' +
+          '<span class="arrow arrow-down">' + ARROW_DOWN_SVG + '</span>' +
+        '</div>' +
+        // 展开后的内容（默认隐藏）
+        '<div class="reply-list-wrap" style="display:none;">' +
+          '<div class="reply-items">' + replyItems + '</div>' +
+          footerHtml +
+        '</div>' +
+      '</div>';
+    }
+
+    return '<div class="comment-item" data-id="' + c.id + '">' +
+      '<button class="delete-btn" onclick="deleteComment(' + c.id + ')">删除</button>' +
+      makeAvatar(color, c.username, c.avatarImg) +
+      '<div class="comment-body">' +
+        '<div class="comment-username">' + c.username + tags.join('') + '</div>' +
+        '<div class="comment-text">' + renderMentionLinks(c.content) + (c.firstComment ? ' <span class="badge badge-first">首评</span>' : '') + '</div>' +
+        (c.img ? '<div class="comment-img"><img src="' + c.img + '"></div>' : '') +
+        '<div class="comment-footer">' +
+          '<div class="comment-meta-left">' +
+            '<span class="comment-time"' + (c.timeTs ? ' data-ts="' + c.timeTs + '"' : '') + '>' + (c.timeTs ? fmtDynamicTime(c.timeTs) : (c.time || '刚刚')) + '</span>' +
+            locationHtml +
+            '<button class="reply-btn" onclick="showReplyInput(' + c.id + ', this)">回复</button>' +
+          '</div>' +
+          renderActionButtons(c.likes, c.dislikes || 0, c.id) +
+        '</div>' +
+        repliesHtml +
+      '</div>' +
+    '</div>';
+  }
+
+  function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
+  }
+
+  function renderComments() {
+    const list = document.getElementById('commentList');
+    if (comments.length === 0) {
+      list.innerHTML = '<div class="empty-state">暂无评论，快来添加第一条吧～</div>';
+    } else {
+      const sorted = comments.slice().sort(function(a, b) {
+        if (b.pin !== a.pin) return (b.pin ? 1 : 0) - (a.pin ? 1 : 0);
+        return (b.likes || 0) - (a.likes || 0);
+      });
+      list.innerHTML = sorted.map(renderComment).join('');
+    }
+    const total = comments.reduce(function(sum, c) { return sum + 1 + (c.replies ? c.replies.length : 0); }, 0);
+    document.getElementById('commentTitle').textContent = total + '条评论';
+    document.getElementById('totalCount').textContent = formatCount(total);
+    saveComments();
+  }
+
+  // ===== 自动记忆（localStorage） =====
+  const SAVE_IDS = ['inputUsername','inputAvatar','inputContent','inputTimeNum','inputTimeUnit','inputCountry','inputProvince','inputLikes','inputDislikes','inputAuthor','inputFirst','inputPin','inputSearchKeyword','replyNickname','replyLikes','replyDislikes','replyTimeNum','replyTimeUnit','replyCountry','replyProvince','replyBadge','inputVideoAuthor','inputVideoDesc','inputLikeCount','inputCollectCount','inputShareCount','inputMsgCount','settingVideo','settingSide'];
+
+  function saveComments() {
+    if (!isMemoryOn()) return;
+    try {
+      localStorage.setItem('dy_mock_comments', JSON.stringify(comments));
+    } catch (e) {}
+  }
+
+  function saveState() {
+    if (!isMemoryOn()) return;
+    try {
+      var state = { values: {} };
+      SAVE_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') state.values[id] = el.checked;
+        else state.values[id] = el.value;
+      });
+      var bgImg = document.getElementById('videoBgImg');
+      var bgVideo = document.getElementById('videoBgVideo');
+      var vaImg = document.getElementById('videoAvatarImg');
+      var rpPreview = document.getElementById('replyAvatarPreview');
+      var disc = document.getElementById('musicDiscImg');
+      if (bgImg && bgImg.src && bgImg.src.indexOf('data:') === 0) state.videoBgImgSrc = bgImg.src;
+      if (bgVideo && bgVideo.src && bgVideo.src.indexOf('data:') === 0) state.videoBgVideoSrc = bgVideo.src;
+      if (vaImg && vaImg.src && vaImg.src.indexOf('data:') === 0) state.videoAvatarSrc = vaImg.src;
+      if (rpPreview && rpPreview.querySelector('img')) {
+        var s = rpPreview.querySelector('img').src;
+        if (s.indexOf('data:') === 0) state.replyAvatarSrc = s;
+      }
+      if (disc && disc.src && disc.src.indexOf('data:') === 0) state.discSrc = disc.src;
+      state.currentLikeNum = currentLikeNum;
+      state.currentCollectNum = currentCollectNum;
+      state.videoLiked = videoLiked;
+      state.videoCollected = videoCollected;
+      localStorage.setItem('dy_mock_state', JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function loadState() {
+    if (!isMemoryOn()) return;
+    try {
+      var raw = localStorage.getItem('dy_mock_state');
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      SAVE_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el || !(id in state.values)) return;
+        if (el.type === 'checkbox') el.checked = state.values[id];
+        else el.value = state.values[id];
+      });
+      if (typeof updateProvinces === 'function') {
+        updateProvinces('input');
+        updateProvinces('reply');
+      }
+      if (typeof toggleVideoBg === 'function') toggleVideoBg();
+      if (typeof toggleSideActions === 'function') toggleSideActions();
+      if (typeof updateSearchKeyword === 'function') updateSearchKeyword();
+      if (typeof updateVideoAuthor === 'function') updateVideoAuthor();
+      if (typeof updateVideoDesc === 'function') updateVideoDesc();
+      if (typeof updateLikeCount === 'function') updateLikeCount();
+      if (typeof updateCollectCount === 'function') updateCollectCount();
+      if (typeof updateShareCount === 'function') updateShareCount();
+      if (typeof updateMsgCount === 'function') updateMsgCount();
+      currentLikeNum = state.currentLikeNum || 0;
+      currentCollectNum = state.currentCollectNum || 0;
+      videoLiked = state.videoLiked || false;
+      videoCollected = state.videoCollected || false;
+      var bgImg = document.getElementById('videoBgImg');
+      var bgVideo = document.getElementById('videoBgVideo');
+      var playIcon = document.getElementById('videoPlayIcon');
+      if (state.videoBgVideoSrc && bgVideo) {
+        bgVideo.src = state.videoBgVideoSrc;
+        bgVideo.style.display = 'block';
+        bgImg.style.display = 'none';
+        playIcon.style.display = 'none';
+        bgVideo.addEventListener('loadeddata', function() {
+          setTimeout(function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = bgVideo.videoWidth;
+            canvas.height = bgVideo.videoHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(bgVideo, 0, 0);
+            var discImg = document.getElementById('musicDiscImg');
+            var defaultDisc = document.getElementById('musicDiscDefault');
+            discImg.src = canvas.toDataURL('image/jpeg', 0.6);
+            discImg.style.display = 'block';
+            defaultDisc.style.display = 'none';
+          }, 200);
+        });
+      } else if (state.videoBgImgSrc && bgImg) {
+        bgImg.src = state.videoBgImgSrc;
+        bgImg.style.display = 'block';
+        bgVideo.style.display = 'none';
+        playIcon.style.display = 'none';
+      }
+      if (state.videoAvatarSrc) {
+        var vaImg = document.getElementById('videoAvatarImg');
+        var vaDefault = document.getElementById('videoAvatarDefault');
+        vaImg.src = state.videoAvatarSrc;
+        vaImg.style.display = 'block';
+        vaDefault.style.display = 'none';
+      }
+      if (state.replyAvatarSrc) {
+        replyAvatarImg = state.replyAvatarSrc;
+        var rpPreview = document.getElementById('replyAvatarPreview');
+        rpPreview.innerHTML = '<img src="' + replyAvatarImg + '" style="width:100%;height:100%;object-fit:cover;">';
+      }
+      if (state.discSrc) {
+        var discImg = document.getElementById('musicDiscImg');
+        var defaultDisc = document.getElementById('musicDiscDefault');
+        discImg.src = state.discSrc;
+        discImg.style.display = 'block';
+        defaultDisc.style.display = 'none';
+      }
+    } catch (e) {}
+  }
+
+  function loadComments() {
+    if (!isMemoryOn()) return;
+    try {
+      var raw = localStorage.getItem('dy_mock_comments');
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        comments = data;
+        nextId = 1;
+        comments.forEach(function(c) {
+          if (c.id >= nextId) nextId = c.id + 1;
+          (c.replies || []).forEach(function(r) { if (r.id >= nextId) nextId = r.id + 1; });
+        });
+      }
+    } catch (e) {}
+  }
+
+  function isMemoryOn() {
+    var el = document.getElementById('settingMemory');
+    return !el || el.checked;
+  }
+
+  function toggleMemory() {
+    var el = document.getElementById('settingMemory');
+    if (el) {
+      try {
+        localStorage.setItem('dy_mock_memory_enabled', el.checked ? '1' : '0');
+      } catch (e) {}
+    }
+  }
+
+  function initAvatarUpload() {
+    const fileInput = document.getElementById('avatarFile');
+    if (fileInput) {
+      fileInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        if (!files || !files.length) return;
+        handlePresetFiles(files, 0, 0);
+        fileInput.value = '';
+      });
+    }
+  }
+
+  function clearAvatar() {
+    _currentAvatarImg = '';
+    document.getElementById('avatarPreviewBox').classList.remove('show');
+    document.getElementById('avatarFile').value = '';
+    document.getElementById('inputAvatar').value = '';
+    document.querySelectorAll('#presetAvatars .preset-slot').forEach(function(s) { s.classList.remove('selected'); });
+  }
+
+  // ===== 预设头像（5 槽位：点击空白上传填入，点击有图直接切换使用） =====
+  var PRESET_KEY = 'dy_preset_avatars_v1';
+  var _presetIndex = -1;
+
+  function loadPreset() {
+    try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || []; } catch (e) { return []; }
+  }
+  function savePreset(arr) {
+    try { localStorage.setItem(PRESET_KEY, JSON.stringify(arr)); } catch (e) {}
+  }
+  function renderPresetAvatars() {
+    var saved = loadPreset();
+    document.querySelectorAll('#presetAvatars .preset-slot').forEach(function(slot, i) {
+      var img = slot.querySelector('img');
+      if (saved[i]) {
+        img.src = saved[i];
+        img.style.display = 'block';
+        slot.classList.add('has-img');
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        slot.classList.remove('has-img');
+      }
+    });
+  }
+  function pickPreset(i) {
+    var saved = loadPreset();
+    if (saved[i]) {
+      _currentAvatarImg = saved[i];
+      document.getElementById('avatarPreviewImg').src = saved[i];
+      document.getElementById('avatarPreviewBox').classList.add('show');
+      document.getElementById('avatarFile').value = '';
+      document.getElementById('inputAvatar').value = '预设头像' + (i + 1);
+      document.querySelectorAll('#presetAvatars .preset-slot').forEach(function(s) { s.classList.remove('selected'); });
+      document.querySelectorAll('#presetAvatars .preset-slot')[i].classList.add('selected');
+    } else {
+      _presetIndex = i;
+      document.getElementById('presetFile').click();
+    }
+  }
+  function initPresetAvatarUpload() {
+    var input = document.getElementById('presetFile');
+    if (!input) return;
+    input.addEventListener('change', function(e) {
+      var files = e.target.files;
+      if (!files || !files.length || _presetIndex < 0) return;
+      handlePresetFiles(files, _presetIndex, _presetIndex);
+      _presetIndex = -1;
+      input.value = '';
+    });
+  }
+
+  // 通用：多张图片压缩后依次填入槽位（从 startIndex 起，最多 5 槽），setCurrent 指定设为当前头像的槽
+  function handlePresetFiles(files, startIndex, setCurrent) {
+    var saved = loadPreset();
+    var total = files.length;
+    var done = 0;
+    for (var k = 0; k < total; k++) {
+      (function(k) {
+        var file = files[k];
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var img = new Image();
+          img.onload = function() {
+            var size = 160;
+            var canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, size, size);
+            ctx.drawImage(img, 0, 0, size, size);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            var idx = startIndex + k;
+            if (idx >= 0 && idx < 5) saved[idx] = dataUrl;
+            done++;
+            if (done === total) {
+              savePreset(saved);
+              renderPresetAvatars();
+              if (setCurrent >= 0 && saved[setCurrent]) {
+                _currentAvatarImg = saved[setCurrent];
+                document.getElementById('avatarPreviewImg').src = saved[setCurrent];
+                document.getElementById('avatarPreviewBox').classList.add('show');
+                document.getElementById('avatarFile').value = '';
+                document.getElementById('inputAvatar').value = '预设头像' + (setCurrent + 1);
+                document.querySelectorAll('#presetAvatars .preset-slot').forEach(function(s) { s.classList.remove('selected'); });
+                document.querySelectorAll('#presetAvatars .preset-slot')[setCurrent].classList.add('selected');
+              }
+            }
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      })(k);
+    }
+  }
+
+  function addComment() {
+    const username = document.getElementById('inputUsername').value.trim();
+    const content = document.getElementById('inputContent').value.trim();
+    const likes = parseInt(document.getElementById('inputLikes').value) || 0;
+    const dislikes = parseInt(document.getElementById('inputDislikes').value) || 0;
+    const timeNum = document.getElementById('inputTimeNum').value.trim();
+    const timeUnit = document.getElementById('inputTimeUnit').value;
+    const time = timeNum ? (timeNum + timeUnit) : '刚刚';
+    const timeTs = timeNum ? null : Date.now();
+    const inputProvince = document.getElementById('inputProvince').value;
+    const location = inputProvince || '';
+    const author = document.getElementById('inputAuthor').checked;
+    const firstComment = document.getElementById('inputFirst').checked;
+    const pin = document.getElementById('inputPin').checked;
+    const avatarImg = _currentAvatarImg;
+
+    if (!username || !content) {
+      alert('请填写用户名和评论内容');
+      return;
+    }
+
+    comments.push({
+      id: nextId++,
+      username: username,
+      content: content,
+      likes: likes,
+      dislikes: dislikes,
+      time: time,
+      timeTs: timeTs,
+      location: location,
+      author: author,
+      firstComment: firstComment,
+      pin: pin,
+      avatarImg: avatarImg,
+      replies: []
+    });
+
+    renderComments();
+    gotoPreview();
+    document.getElementById('inputUsername').value = '';
+    document.getElementById('inputContent').value = '';
+    document.getElementById('inputLikes').value = '0';
+    document.getElementById('inputDislikes').value = '0';
+    document.getElementById('inputTimeNum').value = '';
+    document.getElementById('inputCountry').value = '不显示';
+    updateProvinces('input');
+    document.getElementById('inputProvince').value = '';
+    document.getElementById('inputAuthor').checked = false;
+    document.getElementById('inputPin').checked = false;
+    clearAvatar();
+  }
+
+  function addPreset(type) {
+    const list = presets[type];
+    if (!list) return;
+    list.forEach(function(p) {
+      comments.push({
+        id: nextId++,
+        username: p.username,
+        content: p.content,
+        likes: p.likes || 0,
+        dislikes: p.dislikes || 0,
+        time: p.time || '刚刚',
+        location: p.location || '',
+        author: p.author || false,
+        pin: p.pin || false,
+        avatarImg: '',
+        replies: []
+      });
+    });
+    renderComments();
+    gotoPreview();
+  }
+
+  function deleteComment(id) {
+    comments = comments.filter(function(c) { return c.id !== id; });
+    renderComments();
+  }
+
+  function deleteReply(commentId, replyId) {
+    const comment = comments.find(function(c) { return c.id === commentId; });
+    if (comment && comment.replies) {
+      comment.replies = comment.replies.filter(function(r) { return r.id !== replyId; });
+      renderComments();
+      // 重新展开该评论的回复
+      setTimeout(function() {
+        const items = document.querySelectorAll('.comment-item');
+        items.forEach(function(item) {
+          if (parseInt(item.dataset.id) === commentId) {
+            const section = item.querySelector('.reply-section');
+            if (section) {
+              const listWrap = section.querySelector('.reply-list-wrap');
+              const toggle = section.querySelector('.reply-toggle');
+              if (listWrap && listWrap.style.display === 'none' && toggle) {
+                toggle.click();
+              }
+            }
+          }
+        });
+      }, 50);
+    }
+  }
+
+  function clearAll() {
+    if (confirm('确定要清空所有评论吗？')) {
+      comments = [];
+      renderComments();
+    }
+  }
+
+  function findCommentById(id) {
+    for (let i = 0; i < comments.length; i++) {
+      if (comments[i].id === id) return comments[i];
+      if (comments[i].replies) {
+        for (let j = 0; j < comments[i].replies.length; j++) {
+          if (comments[i].replies[j].id === id) return comments[i].replies[j];
+        }
+      }
+    }
+    return null;
+  }
+
+  function toggleLike(el, baseCount, commentId) {
+    const comment = findCommentById(commentId);
+    if (!comment) return;
+    if (el.classList.contains('liked')) {
+      el.classList.remove('liked');
+      comment.likes = baseCount;
+    } else {
+      el.classList.add('liked');
+      comment.likes = baseCount + 1;
+      // 点赞时取消心碎
+      const dislikeBtn = el.parentElement.querySelector('.action-btn:nth-child(2)');
+      if (dislikeBtn && dislikeBtn.classList.contains('disliked')) {
+        dislikeBtn.classList.remove('disliked');
+        comment.dislikes = Math.max(0, (comment.dislikes || 0) - 1);
+        dislikeBtn.querySelector('.count').textContent = formatBigNum(comment.dislikes);
+        dislikeBtn.querySelector('.icon-wrap').innerHTML = BROKEN_HEART_SVG;
+      }
+    }
+    el.querySelector('.count').textContent = formatBigNum(comment.likes);
+    saveComments();
+  }
+
+  function toggleDislike(el, baseCount, commentId) {
+    const comment = findCommentById(commentId);
+    if (!comment) return;
+    const iconWrap = el.querySelector('.icon-wrap');
+    if (el.classList.contains('disliked')) {
+      el.classList.remove('disliked');
+      comment.dislikes = baseCount;
+      iconWrap.innerHTML = BROKEN_HEART_SVG;
+    } else {
+      el.classList.add('disliked');
+      comment.dislikes = baseCount + 1;
+      iconWrap.innerHTML = BROKEN_HEART_FULL_SVG;
+      // 心碎时取消点赞
+      const likeBtn = el.parentElement.querySelector('.action-btn:nth-child(1)');
+      if (likeBtn && likeBtn.classList.contains('liked')) {
+        likeBtn.classList.remove('liked');
+        comment.likes = Math.max(0, comment.likes - 1);
+        likeBtn.querySelector('.count').textContent = formatBigNum(comment.likes);
+      }
+    }
+    el.querySelector('.count').textContent = formatBigNum(comment.dislikes);
+    saveComments();
+  }
+
+  function toggleReplies(el, commentId) {
+    const section = el.closest('.reply-section');
+    const toggle = section.querySelector('.reply-toggle');
+    const listWrap = section.querySelector('.reply-list-wrap');
+    const isVisible = listWrap.style.display !== 'none';
+
+    if (isVisible) {
+      // 收起
+      listWrap.style.display = 'none';
+      toggle.style.display = 'flex';
+    } else {
+      // 展开：默认只显示前3条
+      const items = listWrap.querySelectorAll('.reply-item');
+      items.forEach(function(item, idx) {
+        item.style.display = idx < 3 ? 'flex' : 'none';
+      });
+      // 显示"展开更多"按钮（如果超过3条）
+      const expandBtn = listWrap.querySelector('.expand-more-btn');
+      if (expandBtn) expandBtn.style.display = 'flex';
+      listWrap.style.display = 'block';
+      toggle.style.display = 'none';
+    }
+  }
+
+  function expandMoreReplies(el, commentId) {
+    const section = el.closest('.reply-section');
+    const items = section.querySelectorAll('.reply-item');
+    items.forEach(function(item) {
+      item.style.display = 'flex';
+    });
+    // 隐藏"展开更多"按钮
+    el.style.display = 'none';
+  }
+
+  function collapseReplies(el, commentId) {
+    const section = el.closest('.reply-section');
+    const toggle = section.querySelector('.reply-toggle');
+    const listWrap = section.querySelector('.reply-list-wrap');
+    listWrap.style.display = 'none';
+    toggle.style.display = 'flex';
+  }
+
+  function showReplyInput(commentId, btn, replyToName) {
+    document.querySelectorAll('.reply-input-area').forEach(function(el) { el.remove(); });
+    const commentItem = btn.closest('.comment-item') || btn.closest('.reply-item');
+    const targetName = replyToName || commentItem.querySelector('.comment-username').textContent;
+    const area = document.createElement('div');
+    area.className = 'reply-input-area';
+    area.setAttribute('data-reply-to', targetName);
+    area.innerHTML =
+      '<input type="text" placeholder="回复 @' + targetName + '..." class="reply-input-field">' +
+      '<button type="button" class="reply-emoji-btn" onclick="toggleReplyEmoji(this)" title="插入表情">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>' +
+      '</button>' +
+      '<button class="reply-send-btn" onclick="submitReply(' + commentId + ', this)">发送</button>' +
+      '<div class="reply-emoji-picker emoji-picker" style="display:none;"></div>';
+    btn.closest('.comment-footer').after(area);
+    const input = area.querySelector('input');
+    input.focus();
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        submitReply(commentId, area.querySelector('.reply-send-btn'));
+      }
+    });
+  }
+
+  // ===== 通用表情选择器（评论设置-评论内容 / 评论区回复输入框） =====
+  function renderEpGrid(picker, cat) {
+    var cats = Object.keys(EMOJI_DATA);
+    var html = '<div class="ep-cats">';
+    cats.forEach(function(c) {
+      html += '<span class="ep-cat' + (c === cat ? ' active' : '') + '" data-cat="' + c + '">' + EMOJI_DATA[c][0] + '</span>';
+    });
+    html += '</div><div class="ep-grid">';
+    EMOJI_DATA[cat].forEach(function(e) {
+      html += '<span class="ep-item" data-emoji="' + e + '">' + e + '</span>';
+    });
+    html += '</div>';
+    picker.innerHTML = html;
+    picker.onclick = function(ev) {
+      var item = ev.target.closest('.ep-item');
+      if (item) {
+        var input = picker._input;
+        if (input) insertAtCursor(input, item.getAttribute('data-emoji'));
+        return;
+      }
+      var catEl = ev.target.closest('.ep-cat');
+      if (catEl) {
+        renderEpGrid(picker, catEl.getAttribute('data-cat'));
+      }
+    };
+  }
+
+  function insertAtCursor(el, text) {
+    var start = el.selectionStart != null ? el.selectionStart : (el.value || '').length;
+    var end = el.selectionEnd != null ? el.selectionEnd : start;
+    var v = el.value || '';
+    var before = v.substring(0, start);
+    var after = v.substring(end);
+    var max = parseInt(el.getAttribute('maxlength')) || 100000;
+    var newVal = before + text + after;
+    if (newVal.length > max) newVal = newVal.substring(0, max);
+    el.value = newVal;
+    var pos = before.length + text.length;
+    el.focus();
+    try { el.setSelectionRange(pos, pos); } catch (e) {}
+    if (el.id === 'inputContent') updateCommentCount();
+  }
+
+  // 评论设置 - 评论内容表情
+  function toggleContentEmoji() {
+    var picker = document.getElementById('contentEmojiPicker');
+    var btn = document.getElementById('contentEmojiBtn');
+    var show = picker.style.display === 'none';
+    picker.style.display = show ? 'block' : 'none';
+    btn.classList.toggle('active', show);
+    if (show && !picker._rendered) {
+      picker._input = document.getElementById('inputContent');
+      renderEpGrid(picker, '常用');
+      picker._rendered = true;
+    }
+  }
+
+  // 评论区回复输入框表情
+  function toggleReplyEmoji(btn) {
+    var area = btn.closest('.reply-input-area');
+    var picker = area.querySelector('.reply-emoji-picker');
+    var show = picker.style.display === 'none';
+    document.querySelectorAll('.reply-emoji-picker').forEach(function(p) {
+      if (p !== picker) p.style.display = 'none';
+    });
+    picker.style.display = show ? 'block' : 'none';
+    btn.classList.toggle('active', show);
+    if (show && !picker._rendered) {
+      picker._input = area.querySelector('.reply-input-field');
+      renderEpGrid(picker, '常用');
+      picker._rendered = true;
+    }
+  }
+
+  function submitReply(commentId, btn) {
+    const input = btn.closest('.reply-input-area').querySelector('.reply-input-field');
+    const content = input.value.trim();
+    if (!content) return;
+    const replyTo = btn.closest('.reply-input-area').getAttribute('data-reply-to') || '';
+    const comment = comments.find(function(c) { return c.id === commentId; });
+    if (comment) {
+      if (!comment.replies) comment.replies = [];
+      const nickname = document.getElementById('replyNickname').value.trim() || '我';
+      const badge = document.getElementById('replyBadge').value;
+      const replyLikes = parseInt(document.getElementById('replyLikes').value) || 0;
+      const replyDislikes = parseInt(document.getElementById('replyDislikes').value) || 0;
+      const replyTimeNum = document.getElementById('replyTimeNum').value.trim();
+      const replyTimeUnit = document.getElementById('replyTimeUnit').value;
+      const replyTime = replyTimeNum ? (replyTimeNum + replyTimeUnit) : '刚刚';
+      const replyTimeTs = replyTimeNum ? null : Date.now();
+      const replyProvince = document.getElementById('replyProvince').value;
+      const replyLocation = replyProvince || '';
+      comment.replies.push({
+        id: nextId++,
+        username: nickname,
+        replyTo: replyTo,
+        content: content,
+        likes: replyLikes,
+        dislikes: replyDislikes,
+        time: replyTime,
+        timeTs: replyTimeTs,
+        location: replyLocation,
+        author: badge === 'author',
+        isFan: badge === 'fan',
+        avatarImg: replyAvatarImg
+      });
+      renderComments();
+      setTimeout(function() {
+        const items = document.querySelectorAll('.comment-item');
+        items.forEach(function(item) {
+          if (parseInt(item.dataset.id) === commentId) {
+            const section = item.querySelector('.reply-section');
+            if (section) {
+              const listWrap = section.querySelector('.reply-list-wrap');
+              if (listWrap && listWrap.style.display === 'none') {
+                section.querySelector('.reply-toggle').click();
+              }
+            }
+          }
+        });
+      }, 50);
+    }
+  }
+
+  let panelVisible = false;
+  function togglePanel() {
+    const panel = document.querySelector('.comment-panel');
+    panelVisible = !panelVisible;
+    if (panelVisible) {
+      // 打开评论区时重置为未展开状态
+      panel.style.display = 'flex';
+      panel.style.height = '62%';
+      // 重置展开按钮图标
+      const btn = document.querySelector('.fullscreen-btn');
+      if (btn) {
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5h7v7"/><path d="M12 19H5v-7"/></svg>';
+      }
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+
+  // 视频背景上传
+  function handleVideoBgUpload(event, type) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('videoBgImg');
+      const video = document.getElementById('videoBgVideo');
+      const playIcon = document.getElementById('videoPlayIcon');
+      const input = document.getElementById('inputVideoBg');
+      if (type === 'image') {
+        img.src = e.target.result;
+        img.style.display = 'block';
+        video.style.display = 'none';
+        video.pause();
+        playIcon.style.display = 'none';
+        input.value = file.name;
+      } else {
+        video.src = e.target.result;
+        video.style.display = 'block';
+        img.style.display = 'none';
+        playIcon.style.display = 'none';
+        video.muted = false;
+        video.play();
+        input.value = file.name;
+        
+        // 截取视频第一帧作为音乐盒封面
+        video.addEventListener('loadeddata', function() {
+          setTimeout(function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frameUrl = canvas.toDataURL('image/png');
+            // 设置音乐盒封面
+            const discImg = document.getElementById('musicDiscImg');
+            const defaultDisc = document.getElementById('musicDiscDefault');
+            if (discImg) {
+              discImg.src = frameUrl;
+              discImg.style.display = 'block';
+              if (defaultDisc) defaultDisc.style.display = 'none';
+            }
+            // 音乐盒默认播放状态，添加旋转动画
+            const discContainer = document.querySelector('.disc-container');
+            const muteOverlay = document.getElementById('muteOverlay');
+            if (discContainer) discContainer.classList.add('playing');
+            if (muteOverlay) muteOverlay.style.display = 'none';
+          }, 100);
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearVideoBg() {
+    const img = document.getElementById('videoBgImg');
+    const video = document.getElementById('videoBgVideo');
+    const playIcon = document.getElementById('videoPlayIcon');
+    const input = document.getElementById('inputVideoBg');
+    img.style.display = 'none';
+    img.src = '';
+    video.style.display = 'none';
+    video.src = '';
+    video.pause();
+    playIcon.style.display = 'block';
+    input.value = '';
+    document.getElementById('videoBgFile').value = '';
+    document.getElementById('videoBgVideoFile').value = '';
+    videoPlaying = false;
+    hideProgressBar();
+  }
+
+  // 弹幕开关
+  let danmuOn = true;
+  // 全屏切换
+  function toggleFullscreen() {
+    const panel = document.querySelector('.comment-panel');
+    const btn = document.querySelector('.fullscreen-btn');
+    if (panel.style.height === '100%') {
+      panel.style.height = '62%';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5h7v7"/><path d="M12 19H5v-7"/></svg>';
+    } else {
+      panel.style.height = '100%';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10h-7V3"/><path d="M3 14h7v7"/></svg>';
+    }
+  }
+
+  // 点击视频区域
+  function handleVideoClick(e) {
+    // 如果点击的是评论区面板里面的元素，不关闭
+    if (e && e.target.closest('.comment-panel')) return;
+    
+    if (panelVisible) {
+      const panel = document.querySelector('.comment-panel');
+      panel.style.display = 'none';
+      panelVisible = false;
+    } else {
+      toggleVideoPlay();
+    }
+  }
+
+
+
+  // 弹幕按钮点击，弹出输入框
+  function toggleDanmu() {
+    const text = prompt('输入弹幕内容：');
+    if (text && text.trim()) {
+      addDanmu(text.trim());
+    }
+  }
+  // 添加弹幕
+  function addDanmu(text) {
+    const layer = document.getElementById('danmuLayer');
+    if (!layer) return;
+    const item = document.createElement('div');
+    item.className = 'danmu-item';
+    item.textContent = text;
+    // 随机位置在屏幕上半部分
+    const top = Math.random() * 40 + 10;
+    item.style.top = top + '%';
+    // 随机速度
+    const duration = Math.random() * 5 + 6;
+    item.style.animationDuration = duration + 's';
+    layer.appendChild(item);
+    // 动画结束后删除
+    setTimeout(() => item.remove(), duration * 1000);
+  }
+
+  // 视频播放进度
+  let videoPlaying = false;
+
+  function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function updateProgressUI() {
+    const video = document.getElementById('videoBgVideo');
+    const progressBar = document.getElementById('videoProgressBar');
+    if (!video || !video.src || video.style.display === 'none') {
+      progressBar.classList.remove('visible');
+      return;
+    }
+    const currentTime = video.currentTime || 0;
+    const duration = video.duration || 0;
+    const percent = duration > 0 ? (currentTime / duration) * 100 : 0;
+    const progressFill = document.getElementById('progressFill');
+    const progressThumb = document.getElementById('progressThumb');
+    if (progressFill) progressFill.style.width = percent + '%';
+    if (progressThumb) progressThumb.style.left = percent + '%';
+  }
+
+  function showProgressBar() {
+    const progressBar = document.getElementById('videoProgressBar');
+    const video = document.getElementById('videoBgVideo');
+    if (video && video.src && video.style.display !== 'none') {
+      progressBar.classList.add('visible');
+      updateProgressUI();
+    }
+  }
+
+  function hideProgressBar() {
+    const progressBar = document.getElementById('videoProgressBar');
+    progressBar.classList.remove('visible');
+  }
+
+  // 视频播放/暂停切换
+  function toggleVideoPlay() {
+    const video = document.getElementById('videoBgVideo');
+    const playIcon = document.getElementById('videoPlayIcon');
+    // 如果没有视频背景，不做处理
+    if (video.style.display === 'none' || !video.src) return;
+    if (videoPlaying) {
+      video.pause();
+      playIcon.style.display = 'block';
+      videoPlaying = false;
+      showProgressBar();
+    } else {
+      video.play();
+      playIcon.style.display = 'none';
+      videoPlaying = true;
+      hideProgressBar();
+    }
+  }
+
+  // 视频事件监听
+  document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('videoBgVideo');
+    const progressBar = document.getElementById('videoProgressBar');
+    const track = document.querySelector('.progress-track');
+    let isDragging = false;
+
+    // 视频时间更新
+    video.addEventListener('timeupdate', function() {
+      if (!isDragging) {
+        if (videoPlaying) {
+          // 播放时不显示进度条，但更新数据
+        } else {
+          updateProgressUI();
+        }
+      }
+    });
+
+    // 视频元数据加载完成
+    video.addEventListener('loadedmetadata', function() {
+      updateProgressUI();
+    });
+
+    // 计算进度百分比
+    function getPercent(e) {
+      const rect = track.getBoundingClientRect();
+      let clientX;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+      } else {
+        clientX = e.clientX;
+      }
+      let percent = (clientX - rect.left) / rect.width;
+      percent = Math.max(0, Math.min(1, percent));
+      return percent;
+    }
+
+    // 拖拽开始
+    function startDrag(e) {
+      const video = document.getElementById('videoBgVideo');
+      if (!video || !video.src || !video.duration) return;
+      isDragging = true;
+      e.preventDefault();
+      const percent = getPercent(e);
+      video.currentTime = percent * video.duration;
+      updateProgressUI();
+    }
+
+    // 拖拽中
+    function onDrag(e) {
+      if (!isDragging) return;
+      const video = document.getElementById('videoBgVideo');
+      if (!video || !video.src || !video.duration) return;
+      e.preventDefault();
+      const percent = getPercent(e);
+      video.currentTime = percent * video.duration;
+      updateProgressUI();
+    }
+
+    // 拖拽结束
+    function endDrag(e) {
+      if (isDragging) {
+        isDragging = false;
+      }
+    }
+
+    // 鼠标事件
+    if (track) {
+      track.addEventListener('mousedown', startDrag);
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', endDrag);
+    }
+
+    // 触摸事件
+    if (track) {
+      track.addEventListener('touchstart', startDrag, { passive: false });
+      document.addEventListener('touchmove', onDrag, { passive: false });
+      document.addEventListener('touchend', endDrag);
+    }
+
+    // 初始隐藏进度条
+    hideProgressBar();
+    // 初始化渲染文案（含#标签加粗）
+    const initialDesc = document.getElementById('inputVideoDesc').value;
+    renderDesc(initialDesc);
+  });
+
+  // 视频作者头像上传
+  function handleVideoAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('videoAvatarImg');
+      const defaultAvatar = document.getElementById('videoAvatarDefault');
+      const input = document.getElementById('inputVideoAvatar');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      defaultAvatar.style.display = 'none';
+      input.value = file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearVideoAvatar() {
+    const img = document.getElementById('videoAvatarImg');
+    const defaultAvatar = document.getElementById('videoAvatarDefault');
+    const input = document.getElementById('inputVideoAvatar');
+    img.style.display = 'none';
+    img.src = '';
+    defaultAvatar.style.display = 'flex';
+    input.value = '';
+    document.getElementById('videoAvatarFile').value = '';
+  }
+
+  // 更新视频作者名字
+  function updateVideoAuthor() {
+    const val = document.getElementById('inputVideoAuthor').value.trim();
+    document.getElementById('videoAuthor').textContent = val || '@';
+  }
+
+  // 渲染文案，#话题标签加粗变白
+  function renderDesc(text) {
+    const desc = document.getElementById('videoDesc');
+    if (!desc) return;
+    // 把#xxx替换成加粗变白的span
+    const html = text.replace(/#([^#\s]+)/g, '<span style="font-weight:700;">#$1</span>');
+    desc.innerHTML = html;
+    checkDescLength();
+  }
+
+  // 保存原始文案
+  let originalDescText = '';
+
+  // 检查文案长度，判断是否需要展开按钮
+  function checkDescLength() {
+    const desc = document.getElementById('videoDesc');
+    const toggle = document.getElementById('descToggle');
+    const wrapper = document.querySelector('.desc-wrapper');
+    if (!desc || !toggle || !wrapper) return;
+    
+    // 保存原始文案（此时desc.innerHTML一定是完整原始文案）
+    originalDescText = desc.innerHTML;
+    const plainText = desc.textContent;
+    
+    // 向下箭头SVG
+    const arrowDown = '<svg width="10" height="8" viewBox="0 0 10 8" style="margin-left:2px;display:inline;vertical-align:middle;"><path d="M1 1 L5 7 L9 1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const expandBtnHtml = '<span style="color:#fff;font-weight:700;cursor:pointer;" onclick="toggleDesc()">... 展开' + arrowDown + '</span>';
+    
+    // 先让wrapper显示完整文案，测量高度
+    wrapper.style.height = 'auto';
+    wrapper.style.overflow = 'visible';
+    toggle.style.display = 'none';
+    desc.innerHTML = originalDescText;
+    
+    // 创建临时元素测量两行高度
+    const lineHeight = parseFloat(getComputedStyle(desc).lineHeight);
+    const twoLineHeight = lineHeight * 2;
+    
+    // 如果超过两行高度
+    if (wrapper.offsetHeight > twoLineHeight + 1) {
+      // 计算截断位置：逐字减少，直到高度小于等于两行（包含展开按钮）
+      let truncated = plainText;
+      // 先把展开按钮加上，一起测量
+      desc.innerHTML = truncated.replace(/#([^#\s]+)/g, '<span style="font-weight:700;">#$1</span>') + expandBtnHtml;
+      
+      while (truncated.length > 10 && wrapper.offsetHeight > twoLineHeight + 1) {
+        truncated = truncated.slice(0, -1);
+        desc.innerHTML = truncated.replace(/#([^#\s]+)/g, '<span style="font-weight:700;">#$1</span>') + expandBtnHtml;
+      }
+      // 多截断两个中文字符
+      truncated = truncated.slice(0, -2);
+      desc.innerHTML = truncated.replace(/#([^#\s]+)/g, '<span style="font-weight:700;">#$1</span>') + expandBtnHtml;
+      toggle.style.display = 'none';
+      wrapper.classList.add('collapsed');
+    } else {
+      // 不需要截断，恢复原始文案
+      desc.innerHTML = originalDescText;
+      wrapper.classList.remove('collapsed');
+      toggle.style.display = 'none';
+    }
+  }
+
+  // 切换展开/收起
+  function toggleDesc() {
+    const desc = document.getElementById('videoDesc');
+    const wrapper = document.querySelector('.desc-wrapper');
+    
+    // 向上箭头SVG
+    const arrowUp = '<svg width="10" height="8" viewBox="0 0 10 8" style="margin-left:2px;display:inline;vertical-align:middle;"><path d="M1 7 L5 1 L9 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    
+    if (wrapper.classList.contains('collapsed')) {
+      // 展开：显示完整文案 + 收起按钮
+      let html = originalDescText + ' <span style="color:#fff;font-weight:700;cursor:pointer;" onclick="toggleDesc()">收起' + arrowUp + '</span>';
+      desc.innerHTML = html;
+      wrapper.classList.remove('collapsed');
+    } else {
+      // 收起：先恢复成原始文案，再重新计算截断
+      desc.innerHTML = originalDescText;
+      checkDescLength();
+    }
+  }
+
+  // 更新视频介绍
+  function updateVideoDesc() {
+    const val = document.getElementById('inputVideoDesc').value;
+    renderDesc(val);
+  }
+
+  // 更新消息未读数
+  function updateMsgCount() {
+    const val = document.getElementById('inputMsgCount').value.trim();
+    const badge = document.getElementById('msgBadge');
+    let num = parseInt(val) || 0;
+    if (num > 99) num = 99;
+    if (num > 0) {
+      badge.textContent = num;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // 音乐唱片封面上传
+  function handleMusicDiscUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('musicDiscImg');
+      const defaultDisc = document.getElementById('musicDiscDefault');
+      const input = document.getElementById('inputMusicDisc');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.objectPosition = 'center';
+      img.style.borderRadius = '50%';
+      defaultDisc.style.display = 'none';
+      if (input) input.value = file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 音乐盒点击：控制视频静音/取消静音
+  function toggleMusic() {
+    const video = document.getElementById('videoBgVideo');
+    const discContainer = document.querySelector('.disc-container');
+    const muteOverlay = document.getElementById('muteOverlay');
+    if (!video || !video.src) {
+      alert('请先上传视频');
+      return;
+    }
+    
+    video.muted = !video.muted;
+    if (video.muted) {
+      discContainer.classList.remove('playing');
+      if (muteOverlay) {
+        muteOverlay.style.display = 'flex';
+        muteOverlay.innerHTML = '♪<span style="position:absolute;top:50%;left:50%;width:90%;height:2px;background:rgba(255,255,255,0.7);transform:translate(-50%,-50%) rotate(-45deg);z-index:11;"></span>';
+      }
+    } else {
+      discContainer.classList.add('playing');
+      if (muteOverlay) muteOverlay.style.display = 'none';
+      video.play();
+    }
+  }
+
+  // 清除音乐唱片封面
+  function clearMusicDisc() {
+    const img = document.getElementById('musicDiscImg');
+    const defaultDisc = document.getElementById('musicDiscDefault');
+    const input = document.getElementById('inputMusicDisc');
+    img.style.display = 'none';
+    img.src = '';
+    defaultDisc.style.display = 'block';
+    if (input) input.value = '';
+    document.getElementById('musicDiscFile').value = '';
+    const inputFile = document.getElementById('musicDiscFileInput');
+    if (inputFile) inputFile.value = '';
+  }
+
+  // 更新点赞数
+
+  // 数字格式化：超过1万显示万，超过1亿显示亿，超过1万亿显示万亿，超过9999万亿显示已上限
+  function formatBigNum(num) {
+    const maxNum = 9999 * 1000000000000; // 9999万亿
+    if (num >= maxNum) {
+      return '已上限';
+    }
+    if (num >= 1000000000000) {
+      return (num / 1000000000000).toFixed(1) + '万亿';
+    } else if (num >= 100000000) {
+      return (num / 100000000).toFixed(1) + '亿';
+    } else if (num >= 10000) {
+      return (num / 10000).toFixed(1) + '万';
+    } else {
+      return num;
+    }
+  }
+
+  // 评论内容字数统计
+  function updateCommentCount() {
+    const val = document.getElementById('inputContent').value;
+    document.getElementById('commentCount').textContent = val.length + '/100';
+  }
+
+  // 省份二级联动
+  const provinceData = {
+    '不显示': [],
+    '中国': ['北京', '天津', '上海', '重庆', '河北', '山西', '辽宁', '吉林', '黑龙江', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南', '广东', '海南', '四川', '贵州', '云南', '陕西', '甘肃', '青海', '台湾', '内蒙古', '广西', '西藏', '宁夏', '新疆', '香港', '澳门'],
+    '美国': ['加州', '纽约', '华盛顿', '德州', '佛罗里达', '伊利诺伊', '马萨诸塞', '宾夕法尼亚', '佐治亚', '内华达'],
+    '日本': ['东京', '大阪', '京都', '北海道', '冲绳', '神奈川', '爱知', '福冈', '广岛', '奈良'],
+    '韩国': ['首尔', '釜山', '济州岛', '仁川', '大邱', '大田', '光州', '京畿道'],
+    '英国': ['伦敦', '曼彻斯特', '利物浦', '爱丁堡', '伯明翰', '格拉斯哥', '利兹', '布里斯托'],
+    '法国': ['巴黎', '马赛', '里昂', '尼斯', '波尔多', '图卢兹', '里尔', '斯特拉斯堡'],
+    '德国': ['柏林', '慕尼黑', '汉堡', '法兰克福', '科隆', '斯图加特', '杜塞尔多夫', '莱比锡'],
+    '澳大利亚': ['悉尼', '墨尔本', '布里斯班', '珀斯', '阿德莱德', '堪培拉', '黄金海岸', '霍巴特'],
+    '加拿大': ['多伦多', '温哥华', '蒙特利尔', '渥太华', '卡尔加里', '埃德蒙顿', '魁北克', '维多利亚'],
+    '新加坡': ['新加坡'],
+    '泰国': ['曼谷', '清迈', '普吉岛', '芭提雅', '苏梅岛', '甲米', '华欣', '孔敬'],
+    '马来西亚': ['吉隆坡', '槟城', '马六甲', '沙巴', '砂拉越', '柔佛', '雪兰莪', '霹雳']
+  };
+  function updateProvinces(type) {
+    const countrySel = document.getElementById(type + 'Country');
+    const provinceSel = document.getElementById(type + 'Province');
+    const country = countrySel.value;
+    const provinces = provinceData[country] || [];
+    
+    provinceSel.innerHTML = '<option value="">请选择</option>';
+    if (provinces.length > 0) {
+      provinceSel.disabled = false;
+      provinces.forEach(function(p) {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        provinceSel.appendChild(opt);
+      });
+    } else {
+      provinceSel.disabled = true;
+    }
+  }
+
+  // 随机生成网名
+  function randomUsername() {
+    const prefixes = ['可爱的', '路过的', '快乐的', '爱吃', '爱睡', '一只', '小', '大', '超级', '认真的', '佛系', '慵懒的', '开心的', '元气', '温柔的', '暴躁的', '努力的', '摸鱼的', '熬夜的'];
+    const middles = ['奶糖', '饼干', '奶茶', '火锅', '炸鸡', '猫咪', '狗狗', '兔子', '小熊', '鸭子', '星星', '月亮', '云朵', '微风', '彩虹', '泡泡', '果冻', '布丁', '草莓', '芒果'];
+    const suffixes = ['爱好者', '收藏家', '小能手', '本用户', '同学', '君', '酱', '仔', '本人', '没错就是我', '在此', '在线', '已上线', '干饭人', '打工人', '追剧人', '刷视频中', '已躺平', '在发呆'];
+    
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const middle = middles[Math.floor(Math.random() * middles.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    
+    const type = Math.floor(Math.random() * 3);
+    let name = '';
+    if (type === 0) {
+      name = prefix + middle;
+    } else if (type === 1) {
+      name = middle + suffix;
+    } else {
+      name = prefix + middle + suffix;
+    }
+    
+    document.getElementById('inputUsername').value = name;
+  }
+
+  function updateLikeCount() {
+    const val = document.getElementById('inputLikeCount').value.trim();
+    currentLikeNum = parseInt(val) || 0;
+    document.getElementById('likeCount').textContent = formatBigNum(currentLikeNum);
+  }
+
+
+  // 更新收藏数
+  function updateCollectCount() {
+    const val = document.getElementById('inputCollectCount').value.trim();
+    currentCollectNum = parseInt(val) || 0;
+    document.getElementById('collectCount').textContent = formatBigNum(currentCollectNum);
+  }
+
+
+  // 更新分享数
+  function updateShareCount() {
+    const val = document.getElementById('inputShareCount').value.trim();
+    let num = parseInt(val) || 0;
+    document.getElementById('shareCount').textContent = formatBigNum(num);
+  }
+
+  // 分享复制链接
+  // 控制面板分页切换
+  function switchPanelTab(page) {
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === page - 1);
+    });
+    document.querySelectorAll('.panel-page').forEach((p, i) => {
+      p.classList.toggle('active', i === page - 1);
+    });
+  }
+
+  // ===== 移动端：预览 / 设置 切换 =====
+  function isMobileWidth() {
+    return window.matchMedia('(max-width: 700px)').matches;
+  }
+
+  function switchMobileView(view) {
+    const body = document.body;
+    const previewBtn = document.getElementById('viewPreviewBtn');
+    const settingsBtn = document.getElementById('viewSettingsBtn');
+    if (view === 'settings') {
+      body.classList.remove('view-preview');
+      body.classList.add('view-settings');
+      previewBtn.classList.remove('active');
+      settingsBtn.classList.add('active');
+      // 切到设置页时关闭评论区并暂停视频，避免后台播放
+      const panel = document.querySelector('.comment-panel');
+      if (panel && panelVisible) {
+        panel.style.display = 'none';
+        panelVisible = false;
+      }
+      const video = document.getElementById('videoBgVideo');
+      if (video && !video.paused) {
+        video.pause();
+        const playIcon = document.getElementById('videoPlayIcon');
+        if (playIcon) playIcon.style.display = 'block';
+        videoPlaying = false;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      body.classList.remove('view-settings');
+      body.classList.add('view-preview');
+      settingsBtn.classList.remove('active');
+      previewBtn.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  // 手机端添加评论后自动跳回预览
+  function gotoPreview() {
+    if (isMobileWidth() && document.body.classList.contains('view-settings')) {
+      switchMobileView('preview');
+    }
+  }
+
+  // 视频点赞切换
+  let videoLiked = false;
+  // 保存原始点赞数和收藏数
+  let currentLikeNum = 0;
+  let currentCollectNum = 0;
+
+  function toggleVideoLike() {
+    const icon = document.getElementById('videoLikeIcon');
+    const count = document.getElementById('likeCount');
+    videoLiked = !videoLiked;
+    if (videoLiked) {
+      icon.querySelector('svg').setAttribute('fill', '#fe2c55');
+      currentLikeNum += 1;
+    } else {
+      icon.querySelector('svg').setAttribute('fill', '#fff');
+      currentLikeNum -= 1;
+    }
+    count.textContent = formatBigNum(currentLikeNum);
+  }
+
+  // 视频收藏切换
+  let videoCollected = false;
+  function toggleVideoCollect() {
+    const icon = document.getElementById('videoCollectIcon');
+    const count = document.getElementById('collectCount');
+    videoCollected = !videoCollected;
+    if (videoCollected) {
+      icon.querySelector('svg').setAttribute('fill', '#ffc107');
+      currentCollectNum += 1;
+    } else {
+      icon.querySelector('svg').setAttribute('fill', '#fff');
+      currentCollectNum -= 1;
+    }
+    count.textContent = formatBigNum(currentCollectNum);
+  }
+
+  function shareLink() {
+    const url = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function() {
+        showToast('链接已复制到剪贴板');
+      }).catch(function() {
+        fallbackCopy(url);
+      });
+    } else {
+      fallbackCopy(url);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showToast('链接已复制到剪贴板');
+    } catch (e) {
+      showToast('复制失败，请手动复制：' + text);
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function showToast(msg) {
+    const existing = document.getElementById('customToast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.textContent = msg;
+    toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.75);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:9999;pointer-events:none;';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 2000);
+  }
+
+  function toggleVideoBg() {
+    const show = document.getElementById('settingVideo').checked;
+    document.getElementById('videoBg').style.display = show ? 'flex' : 'none';
+    document.getElementById('videoInfo').style.display = show ? 'block' : 'none';
+  }
+
+  function toggleSideActions() {
+    const show = document.getElementById('settingSide').checked;
+    document.getElementById('sideActions').style.display = show ? 'flex' : 'none';
+  }
+
+  function updateSearchKeyword() {
+    const val = document.getElementById('inputSearchKeyword').value.trim();
+    document.getElementById('searchKeyword').textContent = val || '谁家的牌子好用';
+  }
+
+  // ===== 底部输入栏功能 =====
+  let _bottomImg = '';
+
+  function toggleSendBtn() {
+    const input = document.getElementById('bottomInput');
+    const btn = document.getElementById('sendBtnInline');
+    if (btn) {
+      btn.style.display = (input.value.trim() || _bottomImg) ? 'block' : 'none';
+    }
+  }
+
+  // 回复头像上传
+  let replyAvatarImg = '';
+  function handleReplyAvatarUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      replyAvatarImg = ev.target.result;
+      const preview = document.getElementById('replyAvatarPreview');
+      preview.innerHTML = '<img src="' + replyAvatarImg + '" style="width:100%;height:100%;object-fit:cover;">';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function submitBottomComment() {
+    const input = document.getElementById('bottomInput');
+    const content = input.value.trim();
+    if (!content && !_bottomImg) return;
+
+    // 引用左侧面板参数
+    const username = document.getElementById('inputUsername').value.trim() || '我';
+    const likes = parseInt(document.getElementById('inputLikes').value) || 0;
+    const dislikes = parseInt(document.getElementById('inputDislikes').value) || 0;
+    const timeNum = document.getElementById('inputTimeNum').value.trim();
+    const timeUnit = document.getElementById('inputTimeUnit').value;
+    const time = timeNum ? (timeNum + timeUnit) : '刚刚';
+    const timeTs = timeNum ? null : Date.now();
+    const inputProvince = document.getElementById('inputProvince').value;
+    const location = inputProvince || '';
+    const author = document.getElementById('inputAuthor').checked;
+    const firstComment = document.getElementById('inputFirst').checked;
+    const avatarImg = _currentAvatarImg;
+
+    comments.push({
+      id: nextId++,
+      username: username,
+      content: content,
+      img: _bottomImg || '',
+      likes: likes,
+      dislikes: dislikes,
+      time: time,
+      timeTs: timeTs,
+      location: location,
+      author: author,
+      firstComment: firstComment,
+      pin: document.getElementById('inputPin').checked,
+      avatarImg: avatarImg,
+      replies: []
+    });
+
+    renderComments();
+    input.value = '';
+    removeBottomImg();
+    closeMentionPanel();
+    document.getElementById('emojiPanel').style.display = 'none';
+    commentInputBar.classList.remove('focused');
+    input.blur();
+    toggleSendBtn();
+  }
+
+  function handleBottomImgUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      _bottomImg = ev.target.result;
+      document.getElementById('bottomImgPreviewImg').src = ev.target.result;
+      document.getElementById('bottomImgPreview').style.display = 'inline-block';
+      toggleSendBtn();
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function removeBottomImg() {
+    _bottomImg = '';
+    document.getElementById('bottomImgPreview').style.display = 'none';
+    document.getElementById('bottomImgPreviewImg').src = '';
+    toggleSendBtn();
+  }
+
+  // @人面板
+  function toggleMentionPanel() {
+    const panel = document.getElementById('mentionPanel');
+    const emojiPanel = document.getElementById('emojiPanel');
+    const inputContainer = document.querySelector('.input-container');
+    const imgPreview = document.getElementById('bottomImgPreview');
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      emojiPanel.style.display = 'none';
+      inputContainer.style.display = 'none';
+      imgPreview.style.display = 'none';
+      renderMentionUsers();
+      setTimeout(function() { document.getElementById('mentionSearch').focus(); }, 50);
+    } else {
+      closeMentionPanel();
+    }
+  }
+
+  function closeMentionPanel() {
+    const panel = document.getElementById('mentionPanel');
+    const inputContainer = document.querySelector('.input-container');
+    const imgPreview = document.getElementById('bottomImgPreview');
+    panel.style.display = 'none';
+    inputContainer.style.display = 'flex';
+    if (_bottomImg) imgPreview.style.display = 'inline-block';
+    document.getElementById('mentionSearch').value = '';
+  }
+
+  function renderMentionUsers(filter) {
+    const container = document.getElementById('mentionUsers');
+    // 收集所有评论中的用户（去重）
+    const userMap = {};
+    comments.forEach(function(c) {
+      if (!userMap[c.username]) {
+        userMap[c.username] = { username: c.username, avatarImg: c.avatarImg || '' };
+      }
+      if (c.replies) {
+        c.replies.forEach(function(r) {
+          if (!userMap[r.username]) {
+            userMap[r.username] = { username: r.username, avatarImg: r.avatarImg || '' };
+          }
+        });
+      }
+    });
+    let users = Object.values(userMap);
+    if (filter) {
+      users = users.filter(function(u) { return u.username.indexOf(filter) >= 0; });
+    }
+    container.innerHTML = users.map(function(u) {
+      const colorIdx = Math.abs(hashCode(u.username)) % avatarColors.length;
+      const color = avatarColors[colorIdx];
+      const initial = u.username.charAt(0).toUpperCase();
+      const avatarHtml = u.avatarImg
+        ? '<div class="mention-avatar"><img src="' + u.avatarImg + '"></div>'
+        : '<div class="mention-avatar" style="background:linear-gradient(135deg,' + color[0] + ',' + color[1] + ')">' + initial + '</div>';
+      return '<div class="mention-user-item" onclick="insertMention(\'' + u.username.replace(/'/g, "\\'") + '\')">' +
+        avatarHtml +
+        '<span class="mention-name">' + u.username + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function filterMentionUsers() {
+    const val = document.getElementById('mentionSearch').value.trim();
+    renderMentionUsers(val || undefined);
+  }
+
+  function sendMention() {
+    const val = document.getElementById('mentionSearch').value.trim();
+    if (!val) return;
+    // 把@用户名写入底部输入框，然后直接发送
+    const input = document.getElementById('bottomInput');
+    input.value = '@' + val + ' ';
+    submitBottomComment();
+  }
+
+  function insertMention(username) {
+    const input = document.getElementById('bottomInput');
+    const cursorPos = input.selectionStart || input.value.length;
+    const textBefore = input.value.substring(0, cursorPos);
+    const textAfter = input.value.substring(cursorPos);
+    input.value = textBefore + '@' + username + ' ' + textAfter;
+    closeMentionPanel();
+    input.focus();
+    const newPos = cursorPos + username.length + 2;
+    input.setSelectionRange(newPos, newPos);
+    toggleSendBtn();
+  }
+
+  // 表情面板
+  const EMOJI_DATA = {
+    '常用': ['😊','😂','🤣','😅','😍','🥰','😘','😜','🤔','😴','😭','😤','😱','🥺','😏','👍','👏','🙏','💪','❤️','🔥','🎉','✨','🌹','💯','😎','🐂','🍺','🎁','⭐','🌟'],
+    '手势': ['👍','👎','👌','✌️','🤞','🤟','🤘','👊','✊','🤛','🤜','👏','🙌','👐','🤲','🙏','💪','🖐️','✋','🤚','🖖','👋','🤙','💅','👈','👉','👆','👇','☝️','👂','👃'],
+    '爱心': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💌','💋','💍','💄','💋','🌹','🌷','🌸','🌺','🌻','🌼'],
+    '动物': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝'],
+    '食物': ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🌽','🥕','🧄','🧅','🥔','🍠','🥐','🍞','🥖','🥨'],
+    '物品': ['🎉','🎊','🎁','🎈','🎂','🍰','🧁','🍫','🍬','🍭','🍮','🍯','🍼','☕','🍵','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧃','🥤','🧋','☂️','🌂','👓','🕶️','⌚']
+  };
+
+  function toggleEmojiPanel() {
+    const panel = document.getElementById('emojiPanel');
+    const mentionPanel = document.getElementById('mentionPanel');
+    const inputContainer = document.querySelector('.input-container');
+    const imgPreview = document.getElementById('bottomImgPreview');
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      mentionPanel.style.display = 'none';
+      inputContainer.style.display = 'none';
+      imgPreview.style.display = 'none';
+      renderEmojiGrid('常用');
+    } else {
+      closeEmojiPanel();
+    }
+  }
+
+  function closeEmojiPanel() {
+    const panel = document.getElementById('emojiPanel');
+    const inputContainer = document.querySelector('.input-container');
+    const imgPreview = document.getElementById('bottomImgPreview');
+    panel.style.display = 'none';
+    inputContainer.style.display = 'flex';
+    if (_bottomImg) imgPreview.style.display = 'inline-block';
+  }
+
+  function closePanelsOnClick() {
+    const mentionPanel = document.getElementById('mentionPanel');
+    const emojiPanel = document.getElementById('emojiPanel');
+    if (mentionPanel.style.display === 'block') {
+      closeMentionPanel();
+    }
+    if (emojiPanel.style.display === 'block') {
+      closeEmojiPanel();
+    }
+  }
+
+  function switchEmojiCat(el, cat) {
+    document.querySelectorAll('.emoji-cat').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    renderEmojiGrid(cat);
+  }
+
+  function renderEmojiGrid(cat) {
+    const grid = document.getElementById('emojiGrid');
+    const emojis = EMOJI_DATA[cat] || EMOJI_DATA['常用'];
+    grid.innerHTML = emojis.map(function(e) {
+      return '<div class="emoji-item" onclick="insertEmoji(\'' + e + '\')">' + e + '</div>';
+    }).join('');
+  }
+
+  function insertEmoji(emoji) {
+    const input = document.getElementById('bottomInput');
+    const cursorPos = input.selectionStart || input.value.length;
+    const textBefore = input.value.substring(0, cursorPos);
+    const textAfter = input.value.substring(cursorPos);
+    input.value = textBefore + emoji + textAfter;
+    closeEmojiPanel();
+    input.focus();
+    const newPos = cursorPos + emoji.length;
+    input.setSelectionRange(newPos, newPos);
+    toggleSendBtn();
+  }
+
+  document.getElementById('inputContent').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      addComment();
+    }
+  });
+
+  initAvatarUpload();
+  initPresetAvatarUpload();
+  renderPresetAvatars();
+
+  // 自动记忆：绑定所有表单元素保存
+  SAVE_IDS.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', saveState);
+      el.addEventListener('change', saveState);
+    }
+  });
+  // 上传类元素保存
+  var uploadEls = ['videoBgFile', 'videoBgVideoFile', 'videoAvatarFile', 'replyAvatarFile', 'avatarFile'];
+  uploadEls.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', saveState);
+  });
+
+  // 恢复自动记忆开关（开关状态本身始终记忆）
+  try {
+    var mem = localStorage.getItem('dy_mock_memory_enabled');
+    if (mem !== null) document.getElementById('settingMemory').checked = (mem === '1');
+  } catch (e) {}
+  loadState();
+  loadComments();
+
+  // 动态时间：未选时间的评论/回复，相对时间随现实时间推移自动增长
+  function fmtDynamicTime(ts) {
+    var diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+    if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+    if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+    return Math.floor(diff / 2592000) + '个月前';
+  }
+  setInterval(function() {
+    document.querySelectorAll('.comment-time[data-ts]').forEach(function(el) {
+      el.textContent = fmtDynamicTime(parseInt(el.getAttribute('data-ts')));
+    });
+  }, 30000);
+
+  renderComments();
+
+  // 底部输入框聚焦/失焦切换布局
+  const bottomInput = document.getElementById('bottomInput');
+  const commentInputBar = document.getElementById('commentInputBar');
+  const bottomInputCount = document.getElementById('bottomInputCount');
+  if (bottomInput && bottomInputCount) {
+    bottomInput.addEventListener('focus', function() {
+      bottomInputCount.style.display = 'block';
+      updateBottomCount();
+    });
+    bottomInput.addEventListener('input', updateBottomCount);
+    bottomInput.addEventListener('blur', function() {
+      if (bottomInput.value.length === 0) {
+        bottomInputCount.style.display = 'none';
+      }
+    });
+    bottomInput.maxLength = 100;
+  }
+  function updateBottomCount() {
+    if (bottomInput && bottomInputCount) {
+      bottomInputCount.textContent = bottomInput.value.length + '/100';
+    }
+  }
+  bottomInput.addEventListener('focus', function() {
+    commentInputBar.classList.add('focused');
+  });
+  bottomInput.addEventListener('blur', function() {
+    setTimeout(function() {
+      if (document.activeElement !== bottomInput &&
+          !document.getElementById('mentionSearch').matches(':focus')) {
+        commentInputBar.classList.remove('focused');
+      }
+    }, 200);
+  });
+  // Ctrl+Enter发送
+  bottomInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitBottomComment();
+    }
+  });
+</script>
+
+</body>
+</html>
